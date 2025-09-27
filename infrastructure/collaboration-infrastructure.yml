@@ -1,0 +1,376 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Real-time Collaboration Infrastructure for EAMS'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'dev'
+    AllowedValues: ['dev', 'staging', 'prod']
+    Description: 'Environment name'
+  
+  ProjectName:
+    Type: String
+    Default: 'eams'
+    Description: 'Project name prefix for resources'
+  
+  ServiceName:
+    Type: String
+    Default: 'discovery'
+    Description: 'Service name for URL generation'
+  
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC ID for ElastiCache (optional, will create default if not provided)'
+    Default: ''
+
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: 'Private subnet IDs for ElastiCache (optional)'
+    Default: ''
+
+Conditions:
+  HasCustomVPC: !Not [!Equals [!Ref VpcId, '']]
+  HasCustomSubnets: !Not [!Equals [!Join ['', !Ref PrivateSubnetIds], '']]
+
+Resources:
+  # VPC for ElastiCache (if not provided)
+  VPC:
+    Type: AWS::EC2::VPC
+    Condition: HasCustomVPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${ServiceName}-collaboration-vpc'
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Condition: HasCustomVPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${ServiceName}-private-subnet-1'
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: HasCustomVPC
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${ServiceName}-private-subnet-2'
+
+  # ElastiCache Subnet Group
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for ElastiCache Redis
+      SubnetIds: !If
+        - HasCustomSubnets
+        - !Ref PrivateSubnetIds
+        - !If
+          - HasCustomVPC
+          - [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+          - !Ref 'AWS::NoValue'
+
+  # Security Group for ElastiCache
+  ElastiCacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ElastiCache Redis
+      VpcId: !If
+        - HasCustomVPC
+        - !Ref VPC
+        - !Ref 'AWS::NoValue'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref WebSocketHandlerSecurityGroup
+
+  # Security Group for WebSocket Handler
+  WebSocketHandlerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for WebSocket handler Lambda
+      VpcId: !If
+        - HasCustomVPC
+        - !Ref VPC
+        - !Ref 'AWS::NoValue'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          DestinationSecurityGroupId: !Ref ElastiCacheSecurityGroup
+
+  # Redis Auth Token
+  RedisAuthToken:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${ProjectName}-${ServiceName}-redis-auth-${Environment}'
+      Description: Redis authentication token
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: 'auth-token'
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+
+  # ElastiCache Redis Cluster
+  ElastiCacheCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub '${ProjectName}-${ServiceName}-redis-${Environment}'
+      Description: Redis cluster for caching and real-time collaboration
+      NodeType: cache.t3.micro
+      Port: 6379
+      NumCacheClusters: 1
+      Engine: redis
+      EngineVersion: '7.0'
+      CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
+      SecurityGroupIds:
+        - !Ref ElastiCacheSecurityGroup
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AuthToken: !Ref RedisAuthToken
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # WebSocket API
+  WebSocketAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${ProjectName}-${ServiceName}-websocket-${Environment}'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Description: WebSocket API for real-time collaboration
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # WebSocket Stage
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      StageName: !Ref Environment
+      AutoDeploy: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # Connections Table for WebSocket Management
+  ConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-${ServiceName}-connections-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ConnectionId
+          AttributeType: S
+        - AttributeName: EntityKey
+          AttributeType: S
+        - AttributeName: UserId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ConnectionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EntityIndex
+          KeySchema:
+            - AttributeName: EntityKey
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: UserId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # IAM Role for WebSocket Handler
+  WebSocketHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WebSocketHandlerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ConnectionsTable}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ConnectionsTable}/index/*'
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketAPI}/*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref RedisAuthToken
+              - Effect: Allow
+                Action:
+                  - elasticache:Connect
+                Resource: !Sub 'arn:aws:elasticache:${AWS::Region}:${AWS::AccountId}:replicationgroup/${ElastiCacheCluster}'
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: '*'
+
+  # WebSocket Lambda Function
+  WebSocketHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${ServiceName}-websocket-handler-${Environment}'
+      CodeUri: src/lambda/websocket/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 30
+      Role: !GetAtt WebSocketHandlerRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref WebSocketHandlerSecurityGroup
+        SubnetIds: !If
+          - HasCustomSubnets
+          - !Ref PrivateSubnetIds
+          - !If
+            - HasCustomVPC
+            - [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+            - !Ref 'AWS::NoValue'
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE: !Ref ConnectionsTable
+          REDIS_ENDPOINT: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
+          REDIS_PORT: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+          REDIS_AUTH_TOKEN_SECRET: !Ref RedisAuthToken
+          WEBSOCKET_API_ID: !Ref WebSocketAPI
+          WEBSOCKET_STAGE: !Ref Environment
+      Events:
+        Connect:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $connect
+        Disconnect:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $disconnect
+        Default:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $default
+
+  # Lambda function for cleanup tasks
+  CleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${ServiceName}-cleanup-${Environment}'
+      CodeUri: src/lambda/cleanup/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 60
+      Role: !GetAtt WebSocketHandlerRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref WebSocketHandlerSecurityGroup
+        SubnetIds: !If
+          - HasCustomSubnets
+          - !Ref PrivateSubnetIds
+          - !If
+            - HasCustomVPC
+            - [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+            - !Ref 'AWS::NoValue'
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE: !Ref ConnectionsTable
+          REDIS_ENDPOINT: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
+          REDIS_PORT: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+          REDIS_AUTH_TOKEN_SECRET: !Ref RedisAuthToken
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Description: Cleanup expired connections and events
+
+Outputs:
+  WebSocketAPIEndpoint:
+    Description: WebSocket API endpoint
+    Value: !Sub 'wss://${WebSocketAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketAPIEndpoint'
+
+  RedisEndpoint:
+    Description: Redis cluster endpoint
+    Value: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-RedisEndpoint'
+
+  RedisPort:
+    Description: Redis cluster port
+    Value: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+    Export:
+      Name: !Sub '${AWS::StackName}-RedisPort'
+
+  ConnectionsTableName:
+    Description: DynamoDB table for WebSocket connections
+    Value: !Ref ConnectionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-ConnectionsTableName'
+
+  RedisAuthTokenSecret:
+    Description: Redis auth token secret ARN
+    Value: !Ref RedisAuthToken
+    Export:
+      Name: !Sub '${AWS::StackName}-RedisAuthTokenSecret'

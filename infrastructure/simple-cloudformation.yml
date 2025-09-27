@@ -1,0 +1,735 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Simple Application Management System - Multi-Project Architecture'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'dev'
+    AllowedValues: ['dev', 'staging', 'prod']
+    Description: 'Environment name'
+  
+  ProjectName:
+    Type: String
+    Default: 'eams'
+    Description: 'Project name prefix for resources'
+  
+  ServiceName:
+    Type: String
+    Default: 'discovery'
+    Description: 'Service name for URL generation'
+  
+  DomainName:
+    Type: String
+    Default: 'optimumcloudservices.com'
+    Description: 'Base domain name'
+  
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: 'SSL Certificate ARN for custom domain (must be in us-east-1)'
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, 'prod']
+  IsNotProd: !Not [!Equals [!Ref Environment, 'prod']]
+  HasCustomDomain: !And 
+    - !Not [!Equals [!Ref DomainName, '']]
+    - !Not [!Equals [!Ref CertificateArn, '']]
+
+Resources:
+  # S3 Bucket for static website hosting
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-${Environment}-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, POST, PUT, DELETE, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+
+  # S3 Bucket Policy for public read access
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket}/*'
+
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${ProjectName}-${Environment}-users'
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: given_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: family_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: company_id
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+        - Name: project_role
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+      UserPoolTags:
+        Environment: !Ref Environment
+        Project: !Ref ProjectName
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub '${ProjectName}-${Environment}-web-client'
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      SupportedIdentityProviders:
+        - COGNITO
+
+  # Cognito Identity Pool
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub '${ProjectName}-${Environment}-identity'
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # DynamoDB Table for multi-project data
+  ProjectManagementTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-${Environment}-data'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # IAM Role for authenticated users
+  AuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-authenticated-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: ProjectManagementPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ProjectManagementTable.Arn
+                  - !Sub '${ProjectManagementTable.Arn}/index/*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub '${WebsiteBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt WebsiteBucket.Arn
+
+  # IAM Role for unauthenticated users (if needed)
+  UnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-unauthenticated-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+
+  # Cognito Identity Pool Role Attachment
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt AuthenticatedRole.Arn
+        unauthenticated: !GetAtt UnauthenticatedRole.Arn
+
+  # Lambda function for cost monitoring
+  CostMonitoringFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-cost-monitoring'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt CostMonitoringRole.Arn
+      Code:
+        ZipFile: |
+          const { CostExplorerClient, GetCostAndUsageCommand } = require('@aws-sdk/client-cost-explorer');
+          
+          const costExplorer = new CostExplorerClient({ region: 'us-east-1' });
+          
+          exports.handler = async (event) => {
+            try {
+              const { period = 'daily', projectId } = event.queryStringParameters || {};
+              
+              // Mock data for now - replace with actual Cost Explorer calls
+              const mockData = {
+                success: true,
+                data: [
+                  { date: '2024-01-01', cost: 45.67, service: 'Total', project: projectId || 'Application Management' },
+                  { date: '2024-01-02', cost: 52.34, service: 'Total', project: projectId || 'Application Management' },
+                  { date: '2024-01-03', cost: 38.91, service: 'Total', project: projectId || 'Application Management' },
+                ],
+                breakdown: [
+                  { service: 'Amazon S3', cost: 25.50, percentage: 45.2 },
+                  { service: 'AWS Lambda', cost: 18.30, percentage: 32.4 },
+                  { service: 'Amazon DynamoDB', cost: 8.75, percentage: 15.5 },
+                ],
+                totalCost: 56.50,
+                period: period,
+              };
+              
+              return {
+                statusCode: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Allow-Headers': 'Content-Type',
+                  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                },
+                body: JSON.stringify(mockData),
+              };
+            } catch (error) {
+              return {
+                statusCode: 500,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*',
+                },
+                body: JSON.stringify({ success: false, error: error.message }),
+              };
+            }
+          };
+      Environment:
+        Variables:
+          PROJECT_TABLE: !Ref ProjectManagementTable
+      Timeout: 30
+
+  # IAM Role for cost monitoring Lambda
+  CostMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-cost-monitoring-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CostMonitoringPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ce:GetCostAndUsage
+                  - ce:GetDimensionValues
+                  - ce:GetReservationCoverage
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource: !GetAtt ProjectManagementTable.Arn
+
+  # API Gateway for Lambda functions
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-api'
+      Description: 'API Gateway for Application Management System'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Method for cost monitoring
+  CostMonitoringMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !GetAtt ApiGateway.RootResourceId
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CostMonitoringFunction.Arn}/invocations'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # Lambda permission for API Gateway
+  CostMonitoringPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CostMonitoringFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/*'
+
+  # API Gateway Deployment
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: CostMonitoringMethod
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: !Ref Environment
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        Enabled: true
+        Comment: !Sub 'EAMS Distribution for ${Environment}-${ServiceName}'
+        Aliases: !If
+          - HasCustomDomain
+          - [!Sub '${Environment}-${ServiceName}.${DomainName}']
+          - !Ref AWS::NoValue
+        ViewerCertificate: !If
+          - HasCustomDomain
+          - AcmCertificateArn: !Ref CertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  # CloudFront Origin Access Identity
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${Environment}-${ServiceName}'
+
+  # CloudFront OAI S3 Policy
+  CloudFrontOAIPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${WebsiteBucket}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+
+  # AI Processing S3 Bucket
+  AIProcessingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-${Environment}-ai-processing-${AWS::AccountId}'
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldFiles
+            Status: Enabled
+            ExpirationInDays: 7
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: AIProcessing
+
+  # AI Processing Lambda Function
+  AIProcessingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-ai-processing'
+      Runtime: python3.9
+      Handler: index.handler
+      Role: !GetAtt AIProcessingRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          
+          def handler(event, context):
+              # AI processing logic will be implemented here
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('AI processing completed')
+              }
+      Environment:
+        Variables:
+          PROJECT_TABLE: !Ref ProjectManagementTable
+          AI_BUCKET: !Ref AIProcessingBucket
+      Timeout: 300
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: AIProcessing
+
+  # IAM Role for AI processing
+  AIProcessingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-ai-processing-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AIProcessingPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !GetAtt ProjectManagementTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub '${AIProcessingBucket}/*'
+              - Effect: Allow
+                Action:
+                  - textract:*
+                  - comprehend:*
+                  - bedrock:*
+                Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: AIProcessing
+
+  # Systems Manager Parameter Store - Configuration
+  ConfigParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/config'
+      Type: String
+      Value: !Sub |
+        {
+          "environment": "${Environment}",
+          "stage": "${Environment}",
+          "projectName": "${ProjectName}",
+          "serviceName": "${ServiceName}",
+          "domainName": "${DomainName}",
+          "customDomain": "${Environment}-${ServiceName}.${DomainName}",
+          "awsRegion": "${AWS::Region}",
+          "awsAccountId": "${AWS::AccountId}",
+          "stackName": "${AWS::StackName}",
+          "cloudFrontDistributionId": "${CloudFrontDistribution}",
+          "s3BucketName": "${WebsiteBucket}",
+          "dynamoDbTableName": "${ProjectManagementTable}",
+          "userPoolId": "${UserPool}",
+          "userPoolClientId": "${UserPoolClient}",
+          "identityPoolId": "${IdentityPool}",
+          "apiGatewayUrl": "${ApiGateway}",
+          "costMonitoringFunction": "${CostMonitoringFunction}",
+          "aiProcessingFunction": "${AIProcessingFunction}",
+          "aiProcessingBucket": "${AIProcessingBucket}"
+        }
+      Description: !Sub 'EAMS configuration parameters for ${Environment}'
+
+  # Systems Manager Parameter Store - Feature Flags
+  FeatureFlagsParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/feature-flags'
+      Type: String
+      Value: !Sub |
+        {
+          "enableAIProcessing": true,
+          "enableCostMonitoring": true,
+          "enableBulkUpload": true,
+          "enableExcelImport": true,
+          "enableDependencyMapping": true,
+          "enableImpactAnalysis": true,
+          "enableReporting": true,
+          "enableMultiProject": true,
+          "enableCustomDomain": true,
+          "enableCloudFront": true,
+          "enableS3Hosting": true,
+          "enableDynamoDB": true,
+          "enableCognito": true,
+          "enableAPIGateway": true,
+          "enableLambda": true
+        }
+      Description: !Sub 'EAMS feature flags for ${Environment}'
+
+  # Secrets Manager - Database Credentials
+  DatabaseSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/database/credentials'
+      Description: !Sub 'Database credentials for ${Environment} EAMS'
+      SecretString: !Sub |
+        {
+          "username": "eams-${Environment}",
+          "password": "PLACEHOLDER_PASSWORD",
+          "host": "${ProjectManagementTable}",
+          "port": "443",
+          "database": "eams",
+          "engine": "dynamodb"
+        }
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # Secrets Manager - API Keys
+  APIKeysSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/api/keys'
+      Description: !Sub 'API keys for ${Environment} EAMS'
+      SecretString: !Sub |
+        {
+          "openaiApiKey": "PLACEHOLDER_OPENAI_KEY",
+          "anthropicApiKey": "PLACEHOLDER_ANTHROPIC_KEY",
+          "azureOpenAIKey": "PLACEHOLDER_AZURE_KEY",
+          "azureOpenAIEndpoint": "https://your-${Environment}-resource.openai.azure.com/"
+        }
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # Secrets Manager - External Service Credentials
+  ExternalServiceSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '/${ProjectName}/${Environment}/external/services'
+      Description: !Sub 'External service credentials for ${Environment} EAMS'
+      SecretString: !Sub |
+        {
+          "slackWebhookUrl": "PLACEHOLDER_SLACK_WEBHOOK",
+          "emailServiceKey": "PLACEHOLDER_EMAIL_KEY",
+          "monitoringApiKey": "PLACEHOLDER_MONITORING_KEY"
+        }
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: !Ref ServiceName
+
+Outputs:
+  WebsiteURL:
+    Description: 'URL of the website'
+    Value: !If
+      - HasCustomDomain
+      - !Sub 'https://${Environment}-${ServiceName}.${DomainName}'
+      - !Sub 'https://${CloudFrontDistribution.DomainName}'
+  
+  CloudFrontURL:
+    Description: 'CloudFront Distribution URL'
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+  
+  CustomDomainURL:
+    Description: 'Custom Domain URL (if configured)'
+    Value: !If
+      - HasCustomDomain
+      - !Sub 'https://${Environment}-${ServiceName}.${DomainName}'
+      - 'Not configured'
+
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClientId'
+
+  IdentityPoolId:
+    Description: 'Cognito Identity Pool ID'
+    Value: !Ref IdentityPool
+    Export:
+      Name: !Sub '${AWS::StackName}-IdentityPoolId'
+
+  DynamoDBTableName:
+    Description: 'DynamoDB Table Name'
+    Value: !Ref ProjectManagementTable
+    Export:
+      Name: !Sub '${AWS::StackName}-DynamoDBTableName'
+
+  ApiGatewayURL:
+    Description: 'API Gateway URL'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayURL'

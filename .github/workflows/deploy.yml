@@ -1,0 +1,159 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false --coverage
+
+      - name: Build application
+        run: npm run build
+        env:
+          REACT_APP_AWS_REGION: ${{ env.AWS_REGION }}
+          REACT_APP_USER_POOL_ID: ${{ secrets.AWS_USER_POOL_ID }}
+          REACT_APP_USER_POOL_WEB_CLIENT_ID: ${{ secrets.AWS_USER_POOL_WEB_CLIENT_ID }}
+          REACT_APP_IDENTITY_POOL_ID: ${{ secrets.AWS_IDENTITY_POOL_ID }}
+          REACT_APP_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          REACT_APP_DYNAMODB_TABLE: ${{ secrets.AWS_DYNAMODB_TABLE }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: build/
+
+  deploy-dev:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: build/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3 (Dev)
+        run: |
+          aws s3 sync build/ s3://${{ secrets.AWS_S3_BUCKET_DEV }} --delete
+          echo "Deployed to dev environment"
+
+      - name: Invalidate CloudFront cache (Dev)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV }} \
+            --paths "/*"
+        if: secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV != ''
+
+      - name: Notify deployment success (Dev)
+        run: |
+          echo "✅ Successfully deployed to development environment"
+          echo "🌐 URL: https://${{ secrets.AWS_CLOUDFRONT_DOMAIN_DEV }}"
+
+  deploy-prod:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: build/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create deployment package
+        run: |
+          tar -czf deployment-$(date +%Y%m%d-%H%M%S).tar.gz build/
+          aws s3 cp deployment-*.tar.gz s3://${{ secrets.AWS_S3_BUCKET }}/backups/
+
+      - name: Deploy to S3 (Prod)
+        run: |
+          aws s3 sync build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+          echo "Deployed to production environment"
+
+      - name: Invalidate CloudFront cache (Prod)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Update deployment status
+        run: |
+          echo "✅ Successfully deployed to production environment"
+          echo "🌐 URL: https://${{ secrets.AWS_CLOUDFRONT_DOMAIN }}"
+          echo "📅 Deployment time: $(date)"
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: production
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback to previous version
+        run: |
+          echo "🔄 Rolling back deployment..."
+          # Get the most recent backup
+          LATEST_BACKUP=$(aws s3 ls s3://${{ secrets.AWS_S3_BUCKET }}/backups/ | sort | tail -n 1 | awk '{print $4}')
+          if [ ! -z "$LATEST_BACKUP" ]; then
+            aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/backups/$LATEST_BACKUP .
+            tar -xzf $LATEST_BACKUP
+            aws s3 sync build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+            echo "✅ Rollback completed"
+          else
+            echo "❌ No backup found for rollback"
+          fi
+
+      - name: Notify rollback
+        run: |
+          echo "🔄 Application Management System deployment failed and was rolled back"
