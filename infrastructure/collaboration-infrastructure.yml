@@ -289,8 +289,8 @@ Resources:
       Environment:
         Variables:
           CONNECTIONS_TABLE: !Ref ConnectionsTable
-          REDIS_ENDPOINT: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
-          REDIS_PORT: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+          REDIS_ENDPOINT: !Ref ElastiCacheCluster
+          REDIS_PORT: 6379
           REDIS_AUTH_TOKEN_SECRET: !Ref RedisAuthToken
           WEBSOCKET_API_ID: !Ref WebSocketAPI
           WEBSOCKET_STAGE: !Ref Environment
@@ -334,8 +334,8 @@ Resources:
       Environment:
         Variables:
           CONNECTIONS_TABLE: !Ref ConnectionsTable
-          REDIS_ENDPOINT: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
-          REDIS_PORT: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+          REDIS_ENDPOINT: !Ref ElastiCacheCluster
+          REDIS_PORT: 6379
           REDIS_AUTH_TOKEN_SECRET: !Ref RedisAuthToken
       Events:
         Schedule:
@@ -353,13 +353,13 @@ Outputs:
 
   RedisEndpoint:
     Description: Redis cluster endpoint
-    Value: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
+    Value: !Ref ElastiCacheCluster
     Export:
       Name: !Sub '${AWS::StackName}-RedisEndpoint'
 
   RedisPort:
     Description: Redis cluster port
-    Value: !GetAtt ElastiCacheCluster.RedisEndpoint.Port
+    Value: 6379
     Export:
       Name: !Sub '${AWS::StackName}-RedisPort'
 
