@@ -1,0 +1,315 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB tables for EAMS Project Discovery System'
+
+Resources:
+  # Projects Table
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-Projects
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: companyId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: projectId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CompanyIdIndex
+          KeySchema:
+            - AttributeName: companyId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: SearchIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Applications Table
+  ApplicationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-Applications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: applicationId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: criticality
+          AttributeType: N
+      KeySchema:
+        - AttributeName: applicationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CriticalityIndex
+          KeySchema:
+            - AttributeName: criticality
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Runbooks Table
+  RunbooksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-Runbooks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: runbookId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+      KeySchema:
+        - AttributeName: runbookId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Contacts Table
+  ContactsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-Contacts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: contactId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: team
+          AttributeType: S
+      KeySchema:
+        - AttributeName: contactId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: TeamIndex
+          KeySchema:
+            - AttributeName: team
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Issues Table
+  IssuesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-Issues
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: issueId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: issueStatus
+          AttributeType: S
+      KeySchema:
+        - AttributeName: issueId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: issueStatus
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Discovery Questions Table
+  DiscoveryQuestionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-DiscoveryQuestions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: questionId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+      KeySchema:
+        - AttributeName: questionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+  # Peripheral Testing Table
+  PeripheralTestingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EAMS-PeripheralTesting
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: peripheralId
+          AttributeType: S
+        - AttributeName: projectId
+          AttributeType: S
+        - AttributeName: application
+          AttributeType: S
+      KeySchema:
+        - AttributeName: peripheralId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ProjectIdIndex
+          KeySchema:
+            - AttributeName: projectId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: ApplicationIndex
+          KeySchema:
+            - AttributeName: application
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: EAMS
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name
+
+Outputs:
+  ProjectsTableName:
+    Description: Name of the Projects table
+    Value: !Ref ProjectsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-ProjectsTable
+
+  ApplicationsTableName:
+    Description: Name of the Applications table
+    Value: !Ref ApplicationsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-ApplicationsTable
+
+  RunbooksTableName:
+    Description: Name of the Runbooks table
+    Value: !Ref RunbooksTable
+    Export:
+      Name: !Sub ${AWS::StackName}-RunbooksTable
+
+  ContactsTableName:
+    Description: Name of the Contacts table
+    Value: !Ref ContactsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-ContactsTable
+
+  IssuesTableName:
+    Description: Name of the Issues table
+    Value: !Ref IssuesTable
+    Export:
+      Name: !Sub ${AWS::StackName}-IssuesTable
+
+  DiscoveryQuestionsTableName:
+    Description: Name of the Discovery Questions table
+    Value: !Ref DiscoveryQuestionsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-DiscoveryQuestionsTable
+
+  PeripheralTestingTableName:
+    Description: Name of the Peripheral Testing table
+    Value: !Ref PeripheralTestingTable
+    Export:
+      Name: !Sub ${AWS::StackName}-PeripheralTestingTable
+

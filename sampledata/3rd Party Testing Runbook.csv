@@ -1,0 +1,282 @@
+﻿Testing Runbook,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+"Thursday, May 1, 2025",,,,,,Application,,,Resources,,,,,,,,,,Additional Info,
+Task ID,E0E- NP,E0A- NP,FDI- NP,AIP- NP,FHIR Override,System / Vendor,Testing Method / Steps Completed,Manager,Task Owner,Team,Flow,TST DryRun Capable?,"Non-Prod
+Dry Run 1
+Status","Non-Prod
+Dry Run 2
+Status",Emergency Valid(8/4),"Cloud Prod Smoke Test
+Status",Criticality,Corepoint + IC,Task Notes,Cutover during testing window
+1.20,,,,,,Imprivata Badge Tap- Test Badge Tap,,Scott Sanderson,Christopher Crisson,Client Engineering - Citrix,,No,Not Testable,Not Testable,Not Testable,Pass,0,No,"Only used on thin clients, so won't be able to test as part of phase1 Were successful in the Lab and in the clinic pilot.",Yes
+1.69,,,,,,Imprivata IDG,Interdisciplinary Group- FHIRInterconnect FHIR - Interconnect-IdG-TST,Donnie Lee,Pam Shelton,INFO SEC / ECSA,On-Prem Only Communication,Yes,Pass,Pass,Pass,Post Cutover Test Only,0,No,"Per SailPoint: The bridge points to DNS names and if those are remaining the same, then there should be no issues. The ports that IGA uses are: IIS port 80 or 8080 Jetty port 8443 SQL port 1433
+
+Test interface is VAL, so we'll need to test this post cutover. Low risk since we have a manual fallback process that is solid.",No
+1.70,,,,,,Imprivata ConfirmID,Interconnect,Donnie Lee,Manuel Bonilla-Pamela Shelton,ITS INFORMATION SECURITY,External via Internet,Yes,Pass,Pass,Pass,Post Cutover Test Only,0,Yes,"Per SailPoint: The bridge points to DNS names and if those are remaining the same, then there should be no issues. The ports that IGA uses are: IIS port 80 or 8080 Jetty port 8443 SQL port 1433
+
+Test interface is VAL, so we'll need to test this post cutover. Low risk since we have a manual fallback process that is solid.",No
+1.17,None,None,None,None,,Aqure (Radiometer America) - Interface Engine,work with Respiratory tech to test ABG device,Mitzi Donaldson,Domah,CAT INPATIENT,Other,Yes,,Pass,,Pass,1,Yes,"Corepoint Interface. RAM checking with analysts for testing 9/15
+Will validate post cutover!",No
+1.19,None,None,None,None,,Breeze Suite - Interface Engine,work with diagnist techs to place orders in Breeze,Mitzi Donaldson,Domah,CAT INPATIENT,Other,Yes,,Pass,,Pass,1,Yes,,No
+1.23,None,None,None,None,,Capsule Technologies,must redirect Neuron on an Anesthesia device to the cloud - PRD Only,Nicola Baker-Camejo,Lissette Alonso,CAT Inpatient (Optesia),Other,Yes,Pass,,,Pass,1,Yes,"Vendor involvement to point to new AWS Epic TST server - Lissette can do this in server. Lisette testing connectivity test
+Confirmed vitals crossing after pointing to cloud environment. 9/25",Yes
+1.24,N/A,N/A,N/A,N/A,,Care Everywhere,I pulled up a patient that has links established with outside sources and requested an update.  It updated to reflect today's date.  I also confirmed that I could view a document previously pulled in from an outside source.,Chris Wright,Jennifer Bailey,INTERFACES,External via Internet,Yes,Pass,Pass,Pass,Post Cutover Test Only,1,Yes,"9/24 - Can only test net connections, any other testing would have to be done post cutover. - CH",No
+1.29,,,,,,Change Healthcare PACS,1. Order placed in EPIC and arrived. 2. Does the order populate in CHC under scheduled?  3. Move the study to ended status in EPIC.  4. Import a JPEG image to the scheduled study from C:\blankimage for the order in question. Clear the QA and change the study to reviewed status.     5. Check for image link in EPIC.  6. Once the dication is complete in PowerScribe check for report to cross to PACS.  7. Once the report is addeded in PowerScribe.  8.Check to see if Addendum is available in PACS,Tina Chapman,Rick Edwards-Chris Chumbley-Brandi Smith,ANC RADIOLOGY,Other,Yes,Pass,,Fail,Post Cutover Test Only,1,Yes,9/24 - This one should be able to be tested. -CH,No
+1.38,,,,,,CredentialStream (Verity),Corepoint,Tamara Bethel-Williams,,,,,No Test System,No Test System,No Test System,No Test System,1,,,
+1.22,,,,,,CAPSLink, Corepoint interface out of Epic to CAPSLink for TPN orders for CAPS to compound the bags for us,Cindy Sullivan,Nicole Benson,CAT PHARMACY,Other,Yes,Pass,,Pass,Pass,1,Yes,"TST Dry Run: Sent test order to CAPS and they verified they recieved order. There is no flow back to EPIC - only outgoing orders. - 8/25 NB
+PRD Smoke Test: Also passed as above - 9/11 NB",No
+1.40,N/A,N/A,N/A,N/A,,Cupid XML to HL7,Interconnect,Tina Chapman,"Brittney Nix-Melissa Fontenot, Ashlee Shiffer",ANC CARDIOLOGY / ECSA,External via Internet,Yes,Fail,Pass,Pass,Post Cutover Test Only,1,Yes,accession # 5431 is not showing an order - hyperlinks still asking for credentials upon launching. Order issue with accession rectified and measurements were successfully transmitted-AS. That Cupid to XML is just a file share listener with a transform file that it looks at to process files. The instance is not up yet though because Patrick and Shawn are working through the error I'm getting on the AWE2 background IC servers. We would need to test this against a different file share structure though so it doesn't steal any files from the PRD file shares. ~ Steve Reagan,No
+1.45,None,100014,None,"640630
+640631
+",,Emdeon / Change Healthcare - Revenue Cycle management,unknown ownership,Tamara Bethel-Williams,Erin Cordova (Brett Kennedy - backup),REV PATIENT ACCESS,Other,Yes,Pass,,Pass,Post Cutover Test Only,1,Yes,"Emdeon is a part of change Healthcare. Emdeon is a comprehensive application designed to streamline and enhance healthcare transactions. It facilitates the efficient processing of electronic claims and provides robust solutions for pharmacies, laboratories, and healthcare providers to improve billing, claims management, and data exchange.",No
+1.46,None,None,None,None,,Emporos/Merchantsoft ,Cash registers for CAT Pharmacy,Cindy Sullivan,Nicole Benson-Meredith Rudeseal-Quentin Decker-Sarah Davis-Earl Turner-Maria Gray-Dawson Byrnes,CAT PHARMACY,External via Internet,No,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,1,Yes,,No
+1.59,,,,,,GE Centricity Perinatal (CPN),Perinatal monitoring and documentation URL for accessing fetal strips.,Cindy Sullivan,Rachel Medley,CAT INPATIENT,Other,Yes,Not Testable,Not Testable,Not Testable,No Test System,1,No,We are not able to test CPN until we are in PRD,No
+1.75,,,,,,Keriton,"New app 3rd party vendor, need to investigate testing needs. Not in LeanIX. There is also an app on mobile devices. There is no weblink in Epic for this app. Only mobile app. Only Corepoint.",Cindy Sullivan,Rachel Medley,CAT INPATIENT,Other,Yes,Pass,,Pass,No Test System,1,Yes,"https://nghs.service-now.com/now/nav/ui/classic/params/target/pm_project.do%3Fsys_id%3Dbd114a661bc7bd10ab9aca22604bcb7a%26sysparm_stack%3D%26sysparm_view%3D
+this integration goes through Corepoint. Keriton does not have a dedicated test server.",No
+1.28,"101089
+103536",None,100074,None,,Change Healthcare- Interconnect Interqual case management,Follow script linked here for testing: https://nghs.sharepoint.com/:x:/r/teams/PMO-EpicFeb2025/Shared%20Documents/General/4%20-%20Testing/Epic%20FEB%2025%20Applications%20Testing%20Toolkits/February%2025%20GC%20-%20Criteria%20Review%20-%20Utilization%20Review.xlsx?d=wdfac4ef949f5488390f24a0430415338&csf=1&web=1&e=wIOVJd,Tamara Bethel-Williams,Erin Cordova (Brett Kennedy - backup),REV PATIENT ACCESS,External via Internet,Yes,Fail,Fail,Pass,Pass,1,Yes,"Doesn't use IP whitelisting; uses geofencing for incoming traffic, and SMART FHIR URL to return info to Epic. Issue logged",No
+1.87,,,,,,Omnicell,corepoint interface,Cindy Sullivan,Earl Turner,Willow,Other,Yes,Pass,,Pass,Pass,1,Yes,"TST Dry Run:  Was able to see orders cross to Omnicell IVX and Omnicell Omnicenter - NB
+PRD Smoke Test:  Was able to see orders cross to Omnicell Omnicenter 9/11 and  IVX 9/16 - NB ",No
+1.88,,100033,,,,Onbase,On-prem document management,Michael McNeilly,Tyjuane Albright,REV HIM,On-Prem Only Communication,Yes,Pass,,Pass,Fail,1,No,"Refresh from OLDTST is forcing us to manually rebuild E0A and start over - TA 9/22
+
+Onbase saying that it's not making back into our system, potentially firewall related - TA 9/26",No
+1.93,,,,,,Phillips Pix IX Webviewer,Likely a corepoint connection,Cindy Sullivan,Peter Dcosta,CAT INPATIENT,,No,No Test System,No Test System,No Test System,Post Cutover Test Only,1,Yes,unable to be tested in TST without significant support from vendor,No
+1.33,None,None,None,None,,Corepoint,Point interface engine to AWS TST ,Chris Wright,Ram,Interfaces,Other,Yes,Pass,,Pass,Pass,1,Yes,,No
+1.94,,,,,,PowerScribe,   1. Enter an order in EPIC and move to arrived.  2. Check Powerscribe to see if order is in Scheduled status.  3. move the study to ended status in EPIC.  4. Create a dictation in Powerscribe.  5. Check EPIC for a report.  6. Create an addendum in Powerscribe.  7. Check Epic for an addendum.                                                                                                                                                                                                  Needs to be tested before this app co-travels to cloud as well as after,Tina Chapman,Rick Edwards-Chris Chumbley-Brandi Smith,Radiant,Other,Yes,Pass,Pass,Fail,Pass,1,Yes,PS states the information comes from and goes to Corepoint so Whitlisting EPIC cloud IP not in scope. Per request ,No
+1.36,None,100120,None,"334830
+334831",,CRA Health (previously Volpera)- ,Enpoint to CRA Health for Mammograpy.  It has an E0A and AIP.  Conformed still in use by RAM.,,"Donna Winslow, Amanda Osbourne-Lisa Thomas",CAT AMBULATORY / ANC RADIOLOGY/ ECSA,Other,Yes,Fail,,Pass,Fail,1,Yes,"Used in Prod, trying to see from RAM if used in TST- FHIR interface still needs to be tested.
+9/11/25 - not working in PRD Cloud Per Ram: ""Steve needs to do some routing to make it work on AWS PRD.""
+
+MRN 030002677, Tuesday (9/23) test and the calculation did not pass
+
+Still failing as of the morning of 9/26 -Donna",No
+1.52,,,,,,FastPass,HL7,Antonio Davis,Paul Deleon,Physical Security,Other,Yes,,Pass,,Pass,1,Yes,ADT interface connected . sent ADT as well,No
+1.64,,,,,,Haiku/Canto,"Interconnect mobile instance
+Test device authentication and functionality. This should be available for TST testing.",Mark Thomas,Amanda Osbourne-Lisa Thomas,CAT AMBULATORY,External via Internet,Yes,Fail,Pass,Pass,Pass,1,Yes,"When attempting to log into Haiku app as FAMMD I got message, ""Login Failure Communication with the server timed out. Seek assistance from an administrator if the problem persists. Code: TimedOut. ",No
+1.67,,,,,,IBM Merge Cardio Web,Corepoint and Interconnect for Cupid,Tina Chapman,Brittney Nix-Melissa Fontenot,ANC CARDIOLOGY,Other,Yes,Fail,Fail,Fail,Pass,1,Yes,Issue logged,No
+1.71,,,,,,Insight RX- FHIR,inbound Interconnect; no changes needed on their side per Elliot at Insight RX - 5/13 NB,Cindy Sullivan,Nicole Benson-Meredith Rudeseal-Quentin Decker-Sarah Davis-Earl Turner-Maria Gray-Dawson Byrnes,CAT PHARMACY,External via Internet,Yes,Fail,Pass,Pass,Pass,1,Yes,"Testing DryRun #1--504 Gateway Time-out
+Testing DryRun #2 - 404- File or directory not found - issue resolved and now working
+https://epic-test1.insight-rx.com/epic/launch/60ea535b-ddf1-4182-9de0-07bda81c7e1d
+PRD Smoke passed 9/23 - NB
+",No
+1.77,,"100029
+100030
+100031",,,,LRS - VPSX,Epic Printing,Scott Sanderson,Steve Reagan,ECSA,On-Prem Only Communication,Yes,Pass,,Pass,Pass,1,Yes,,Yes
+1.80,,,,,,Merge Heartsuite (Mac Lab),"corepoint + inbound Interconnect HL7 for Cupid
+do not have any component of Merge in our images, so accessing XML file is main test here",Tina Chapman,Brittney Nix-Melissa Fontenot,ANC CARDIOLOGY,External via Internet,Yes,Fail,,Pass,Pass,1,Yes,Issue logged with below details,No
+1.81,,,,,,Merge Cardio,"corepoint + inbound Interconnect HL7 for Cupid
+Image links and measurement XML files",Tina Chapman,Brittney Nix-Melissa Fontenot,ANC CARDIOLOGY,On-Prem Only Communication,Yes,Fail,Fail,Pass,Pass,1,No,"Orders, results, and study measurements were successful. Image links are prompting for user crednetials when they should be passed automatically. Also launches in MS Edge instead of IE. Accession # 5429 is shared with an xray exam and second attemt accession # 5431 is not showing an order - hyperlinks still asking for credentials upon launching. Order issue with accession rectified and measurements were successfully transmitted-AS",No
+2.01,,100046,,,,RightFax,Change EPR from pointing to TST server to the PRD server,Scott Sandersion,Kevin McBride-Steve Reagan,"ECSA, SysAdmin, InfoSec, HIM, and app teams like Epic and Trace",On-Prem Only Communication,Yes,Fail,Pass,Pass,Pass,1,Yes,"https://VMFSRFAXT.nghs.com/rightfax/api/epicjobtransfers, Steve Reagan to check with Brandon to setup some testing 9/15
+Mitchell needs ",No
+2.02,,100025,,,,Rover,1) Steve & Scott add config to mobile,Kevin McNeil,Nelson Dowling,ANC LAB,External via Internet,Yes,,Pass,,Pass,1,Yes,"Matt mentioned Rover issues, want to do more indepth testing.  He will speak with Peter Decosta.  Rover passed for Beaker. Just need CLINDOC.",No
+2.06,,,,,,ServiceNow,EasyButton,Jason Camp,Mitchell Hawes,ITS SERVICE NOW,On-Prem Only Communication,Yes,Pass,,Pass,Pass,1,No,"Matt Fowler is checking with Mitchell on this 9/15
+AWS PRD is pointed to dev, prd is still pointed to SN prd",
+2.12,,,,,,Varian,"Can test Aria workflow in TST 
+The Linear Accelerator from Varian, is an advanced radiotherapy system that opens up treatment options for some of the most complex cancers in areas such as the head and neck, lung, breast, abdomen and liver. ",Mark Thomas,Amanda Osborne,AMB ONCOLOGY - RESEARCH,Other,Yes,Pass,,Pass,Pass,1,Yes,"RAM mentioned this will be tested on Tuesday 9/16
+9/18/25 AO - Leslie Tran completed this today with Ram",No
+2.15,,,,,,Willlow Ambulatory,"Issues running on Citrix, generally requires full desktop PCs otherwise peripherals",Mark Thomas,Earl Turner,Willow,On-Prem Only Communication,Yes,No Test System,No Test System,No Test System,Pass,1,No,Testing logging into Willow and verify HSW URL shows as cloud,
+1.12,,,,,,"3M HIS Revenue Cycle Solutions (3M CodeFinder, C&RS, C&RS Plus, 360 Encompass System, Medicode)",,Michael McNeilly,Kim Grandy,REV REVENUE CYCLE,On-Prem Only Communication,No,Fail,No Test System,,No Test System,2,Yes,"then talk to the Solventum cloud. Since the servers are not moving, there should be no changes required on our ",No
+1.21,,,,,,BD Alaris Pumps,"BD Alaris Pumps need IPs swung internally. Add this to cutover runbook and find owner.
+vmasalariscce01 - 172.16.74.144  - CCE TEST
+vmasalariscce03 - 172.16.74.146  - CCE PROD 
+
+This is slated to go live on PRD two days (OCT14) after Cloud PRD is supposed to cutover. Nancy Stockslager PM",Cindy Sullivan,Rachel Medley,CAT INPATIENT,Other,Yes,Fail,No Test System,No Test System,No Test System,2,No,"Did not pass 5/28 testing.
+Currently building, and not slated to go live until October so will not be able to be tested within our TST cycles",No
+1.26,None,None,None,"640677
+640695
+640697
+640733
+640672",,Cardinal Health,Willow Ambulatory supply manager.  It used to be Mckesson supply manager.,Cindy Sullivan,Earl Turner,CAT PHARMACY,External via Internet,No,No Test System,No Test System,No Test System,No Test System,2,Yes,can't be tested in TST,No
+1.35,N/A,N/A,N/A,N/A,,Cover My Meds- EPA,Interconnect,Cindy Sullivan,Earl Turner,Willow/ CAT AMBULATORY / ECSA,External via VPN,No,Fail,No Test System,No Test System,No Test System,2,Yes,"can't be tested in TST, Willow ambulatory through VPN",No
+1.42,N/A,N/A,N/A,N/A,,Cyracom - Interpreter Services (new integration),Interconnect FHIR - no TST env!,Tamara Bethel-Williams,Brandi Gaskin-Erin Cordova-Joshua Small,REV PATIENT ACCESS,,No,No Test System,No Test System,No Test System,No Test System,2,Yes,no test env for cyracom,No
+1.44,,"640690
+640682
+640684",,"640682
+640683
+640684
+640685",,Dr. First (Surescripts),(Med history and Real Time Pharmacy Benefits),Mark Thomas,Amanda Osbourne-Lisa Thomas,Cat Amb,External via Internet,Yes,Pass,,Pass,Post Cutover Test Only,2,Yes,This can only be tested if we have available patient data that has been set up to be received by Dr. First. Can be moved back to testable if we refresh patient data.,No
+1.43,"102759
+103105","105364
+2106900301","36390
+36391
+36392
+36393",None,,DAX Ambient Copilot- FHIR Integration (Nuance),"Interconnect, likely need to test on Hyperdrive and Haiku/Canto mobile device
+Link to video showing steps: https://nghs.sharepoint.com/sites/ITSTechnicalTraining/_layouts/15/stream.aspx?id=%2Fsites%2FITSTechnicalTraining%2FShared%20Documents%2FDAX%20Copilot%2FDAX%20Pre%20Training%20Intro%2EMP4&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview%2Ef468a639%2D0c59%2D448b%2D9885%2Da9bade8b3fa9",,"Lisa Thomas, Christian Haygood",CAT Inpatient/CAT AMB,External via Internet,Yes,Fail,Pass,Fail,Fail,2,Yes,"FHIR was not avail during first round of testing - Firewall updates made and should be ready to go for Rd2
+
+Confirmed working in pre-test with Training Team, with troubleshooting being done with 404 with customize window
+
+8/4 The customization window in DAX Copilot is not working.
+
+Got the protected E0E migrated, and progressed to a new error, but it is showing DAX now instead of Ambient - CH 9/26",No
+1.50,,,,,,Experian (Credit Card Payment),Payment Safe Page,Tamara Bethel-Williams,"Brandi Gaskin, Pam Shifflett, Jennifer Horn, Courtney Bailey",Rev Patient Access,,No,Fail,No Test System,No Test System,No Test System,2,,"can't be tested in TST, there is no testing URL and DB return traffic would come back on wpprod.nghs.com instead of smoke url wptst.nghs.com",No
+1.51,,,,,,Experian RTE,Corepoint,Tamara Bethel-Williams,"Brandi Gaskin, Pam Shifflett, Jennifer Horn, Courtney Bailey",Rev Patient Access,,No,No Test System,No Test System,No Test System,No Test System,2,,can't be tested in TST,No
+1.53,,,,,,File Export or FEX,Interconnect. FEX EpicCare Inpatient. Export files from Epic,Mitzi Donaldson,Sabrina Broome,Bugsy/LTC,On-Prem Only Communication,,No Test System,No Test System,No Test System,No Test System,2,Yes,"Bugsy exports their infections and procedures to NHSN (National Healthcare Safety Network). However, it doesn't work in the TST environment for testing purposes",No
+1.48,,,,,,Ephiphany ,Corepoint Interface,Tina Chapman,Brittney Nix-Melissa Fontenot,ANC CARDIOLOGY / Clin Informatics,On-Prem Only Communication,Yes,Fail,Pass,,Pass,2,No,"Orders and results successful. Image link is prompting for credentials, which is not suppsoed to happen. Should pass credentials automatically.-BG This is now fixed",No
+1.54,,,,,,Finthrive CRD (interconnect) / CRD  - Rapid Retest,,Michael McNeilly,Brenda Fons,REV Rev Cycle,Other,Yes,Fail,Not Testable,,Post Cutover Test Only,2,Yes,"Does not currenlty work in TST on prem. We do not use consitantly in TST and do not know when stopped working. Looks like TST was overrode with PRD build and I have corrected that. Seeing if can reestablish connection on prem. Might have to test in PRD. Case is logged with vendor. 
+6/18/2025 We will plan to test this once SUP is on the cloud. Have not been able to reestablish a connection in TST prem. Last case update FinThrive needed natted IPs. We normally would not test in TST, with SUP being the preferred testing environment for this application. ",No
+1.57,,,,,,Gastro,External via VPN,Chris Wright,Katie Denning,Interfaces,Other,Yes,,Pass,,Pass,2,Yes,RAM said not needed because HL7 Corepoint,No
+1.58,,,,,,GE Airstrip- secure remote access to patient data,Interconnect-GEAirStrip20085-PRD - contact vendor to whitelist IPs,Cindy Sullivan,Peter Dcosta,CAT INPATIENT,External via Internet,No,Not Testable,Not Testable,Not Testable,No Test System,2,Yes,unable to be tested in TST without significant support from vendor. This presentation covers the technical kickoff for GE AirStrip at Hartford Hospital DCMU. https://nghs.sharepoint.com/teams/PMO-GEMonitorandTelemetry/Shared Documents/General/2 - Planning/AirStrip/GE_AirStrip Tech Kickoff Deck - NGHS.pptx?web=1&EntityRepresentationId=f336be3a-3814-42bf-ade4-85dbda56c135,
+1.73,,100066,"103536
+100428",,,Intrado (Televox), REV PATIENT ACCESS SMS / Televox SMS used by Mychart -Interconnect,Tamara Bethel-Williams,"Jennifer Horn, Brandi Gaskin",REV PATIENT ACCESS,External via Internet,Yes,Pass,Pass,Pass,Pass,2,Yes,Had Mitchell bring over EAF 1 but need to swing over FHIR url to test again. JD 9/24/2025,No
+1.74,,,,,,Invita Medical Invita UDI,,Nicola Baker-Camejo,Lissette Alonso,CAT INPATIENT,,No,Not Testable,Not Testable,,No Test System,2,,can't be tested in TST,
+1.55,,,,,,First Databank- Drug Database,inbound Interconnect,Cindy Sullivan,Earl Turner,CAT PHARMACY,Other,Yes,Pass,,Pass,Pass,2,No,,No
+1.82,,,,,,MoveIT,Co-traveller status has been put on HOLD,Chris Wright,"Mark Pawloski, Benjamin Simmons",Data Services,Other,Yes,Pass,Pass,,Post Cutover Test Only,2,No,"RAM to each out to MoveIT team 9/15 - Need epic\prd mount point from Steve
+We were able to successfully validate this for TST, but for PRD we will need to validate post-cutover to ensure it is connected properly. The //PF/prodfiles will not be cutover until after go Live so we cannot test until then.",
+1.83,,,,,,Murj SMART on FHIR,"open.epic/Epic on FHIR App
+
+clicked Murj docket on patient Carolina Cupid, link opens browser with murj docket url, but I do not have  amurj account. Email sent to murj to see if they saw my attempt to connect in their test environment - awaiting response ",Mark Thomas,Christian Haygood,CAT AMB,External via Internet,,Not Testable,Not Testable,Not Testable,No Test System,2,Yes,"Not able to test without Murj involement. Murj team sent docket on Tuesday, but testing window was not open due to reschedule. Email sent to Murj team to assist 6/18 and follow up sent 6/19 with updated testing window, awaiting reply - hoping to recieve test docket from Murj this afternoon or 6/20",No
+1.89,,,,,,Outgoing Document Interface,ODI queue Interconnect,Michael McNeilly,Ram Chimpudi,REV HIM,Other,Yes,Fail,Pass,Pass,Post Cutover Test Only,2,Yes,Ram worked on this one when we had issues on first dry run.,No
+1.90,,"100043
+100163
+100164",,,,Outlook Epic Integration,Outlook Epic Integration was not affected by AWS cloud project- I confimed thebuild looks appropraite in TST. Bkg,Jason Camp / Tamara Bethel-Williams,Brandi Gaskin / Lecia Grunfelder,M365 / REV PATIENT ACCESS / CAT INPATIENT,External via Internet,Yes,No Test System,,No Test System,No Test System,2,Yes,,No
+2.00,,,,,,Real Time Prescription Benefits (SureScripts),Interconnect,Cindy Sullivan,Nicole Benson-Meredith Rudeseal-Quentin Decker-Sarah Davis-Earl Turner-Maria Gray-Dawson Byrnes,CAT PHARMACY,External via Internet,No,,Fail,,Post Cutover Test Only,2,Yes,Still not working - turns out Surescripts also just moved to the cloud so that might be related. Earl to troubleshoot with Amanda - Issue logged. Can't put non prod Surescripts certificates on prod server to test.,No
+1.62,,,"TST Dashboard - 30403003657
+TST Patient Detail - 30403003655",,,Glytec Glucommander- Diabetes care,Interconnect Testing.  Open EPIC find patient on critical care unit and place DKA Insulin Infusion order.  In Sidebar see the order displayed.  Click the link to Glucommander should open the patient detail window and the order should cross in.  ,Cindy Sullivan,Marylynn O'Reilly - Josie Morris,CAT INPATIENT,External via Internet,Yes,Fail,Pass,Pass,Pass,2,Yes,"Error Message - SmartClickV3 experienced an unexpected problem causing your login to fail.
+SmartClickV3 unexpected exception processing Landing page. Error: G-GC-S-1-000006.
+System.IO.DirectoryNotFoundException: Could not find a part of the path 'D:\inetpub\wwwroot\GSENT.1689-t01.glytecenterprise.com.3512\csharp\Glucommander\Views\SMARTonFHIR\Landing\LandingError.cshtml'.
+
+8/6 - TST Passes after troubleshooting with vendor",No
+2.04,,,,"640119
+640731
+",,SEPA- Southeastern Pathology Reports,"
+Southeastern Pathology Associates provides comprehensive pathology services, specializing in diagnostic testing. ",Chris Wright,Katie Denning,Interfaces,Other,Yes,,Pass,,Pass,2,Yes,VPN connection through Corepoint,No
+2.09,,,,,,Surescripts E-Prescribe,3rd Party Pharmacy integration. Sending prescriptions and pulling in fill information.,Cindy Sullivan,Earl Turner,CAT PHARMACY / ECSA,External via Internet,Yes,Fail,Fail,Pass,Post Cutover Test Only,2,Yes,"""Attestation"" still needed from NGHS IT to Surescripts. Attestation logged with Surescripts (6/9)
+Still not working - turns out Surescripts also just moved to the cloud so that might be related. Earl to troubleshoot with Amanda - Issue logged",No
+1.85,,,,,,Nuance Dragon Medical One,"Active FHIR API in Vendor Services
+5/28/25 - Tried onsite testing and the mic does not work to integrate directly with Epic. The mic will work to dictate to the box and then transition to Epic.
+6/2/25 - Reviewed with Tomel and Krista. Unable to test on Epic Cloud TST app. Can only test Dragon on published apps at this time. ",Mark Thomas,Amanda Osbourne-Lisa Thomas-Ashley Tipton,CAT AMBULATORY / CAT INPATIENT,External via Internet,Yes,Not Testable,Not Testable,Not Testable,Fail,2,Yes,"Will be testing in the Lab 9/18
+Lisa Thomas successful test in lab/thin client 9/18
+
+Moving this back to fail due to build issues with the Easy Button not working. We're trying to move these records back in time to validate. - 9/25",
+1.91,,"27030
+27032
+27033",,,,Pecos (Dorothy/HomeHealth),"interconnect. The information obtained regarding PECOS enrollment status is completed via an Epic Batch Run. The batch job obtains a file from CMS and uploads that file to system. The batch gets the file from CMS, uploads it to our FTP, then uploads the file to system. Using the following file paths: Non PRD file path:    \\nghs.com\epic\NonProd\Hospice\PECOS
+PRD file path:   \\nghs.com\epic\Prod\Hospice\PECOS  
+Verified with ECSA these file paths will not be affected. ",Cindy Sullivan,Casey Barron / Mary Beth Cole,HOSPICE,External via Internet,Yes,Pass,Pass,Pass,Pass,2,Yes,Ran Batch Job: 315 - NGHS HSPC PECOS in Putty AWS TST Environment; Batch job ran successfully; validated PECOS enrollment status updated in Hospice Intake StoryBoard ,No
+1.11,,"33100
+33101 ",100112,"200400
+30820040001",No,"3M Core Grouper for Claims- Test running claims, check Interconnect trace viewer for errors.","1.  Accessed a claims WQ with Medicare claims
+2.  Refreshed claims with CGS error
+3.  Error cleared
+
+210000003452
+200000005582
+
+Per Steve: No errors on the log",Michael McNeilly,Kim Grandy,REV REVENUE CYCLE,On-Prem Only Communication,Yes,Pass,,Pass,Pass,3,Yes,"3M does not rely on whitelisting. per 3M, User traffic from Epic goes to the 360 Encompass Servers (on-prem), which ",No
+1.13,None,100013,100001,None,,ACR Care Select- Decision support for Radiology,"1. Open Ancillary Orders for the patient.  
+2. Place a new order for an in-scope radiology procedure. Fill out all required fields, including the ordering provider, procedure, and diagnosis.  
+3. Verify Record Decision Support Information? question appears but is not a hard stop   
+4. Skip the Decision Support question.    
+5. Sign order    
+6. Verify CareSelect BPA does not fire  
+7. VERIFY: The new order appears in chart review and on the Appt Desk - Orders tab.                                                                                                                                                                                      Likely covered in weblink testing automation, looks like the last weblink test against on-prem failed in late March however
+
+https://epic-cdsapi.careselect.org/bpa
+https://epic-test-cdsapi.careselect.org/bpa
+ ",Tina Chapman,Rick Edwards / Chris Chumbley,ANC RADIOLOGY,Other,Yes,Pass,,Pass,Pass,3,Yes,"ACR Care Select 5/14/2025 5/20/2025,  (ACR Select ""Care Select"" is a weblink per Katy Gantt. The links do not look active. Reaching out to Katy Gantt for more feedback. 5-19-25 Meeting with Katy Gantt to understand the workflow. Ticket placed with Care Select and email chain going with our Account Rep. will not need to be whitelisted the Epic IPs as the messges are coming from corepoint.
+
+Definitely want to validate this one with the PRD link
+
+9/11 Successfully tested in Cloud PRD pointing to 'Test' Careselect URL. Requested to have E0A [100013] updated to use the 'PRD' Careselect URL instead of 'Test' Careselect URL. Discussed with Steve, Matthew, Jason D., and Ram. Ram advised this change would not be possible due to InterConnect settings/dependencies. Will have revisit at cutover.",No
+1.15,"1501207
+101229",100069,"100317
+100069",None,,AIDA Healthcare,FHIR - no whitelisting required,Cindy Sullivan,Shelvia Stewart,CAT INPATIENT,External via Internet,Yes,Fail,Pass,Pass,Pass,3,Yes,"https://aida.com/service/test
+FHIR Intergration",No
+1.18,103081,None,None,None,,Baby 360 by YoMingo,Inbound to Epic - analyst would likely need to point to cloud instance of Epic ,Cindy Sullivan,Rachel Medley,CAT INPATIENT,External via Internet,Yes,Pass,,Pass,Pass,3,Yes,"YoMingo does not utilize IP whitelisting, so the app will not be impacted by this update.  https://baby360.com/mobile-app/  - FHIR IC integration",No
+1.31,"640100
+103204","100653
+2100000146
+33500000936","100653
+100697
+33500000936",None,,Clinical Skills/ClinicalKey,Practitioner.Read (STU3)- FHIR based app,John Hale / Cindy Sullivan,"Kyle Hriczo, Shelvia Stewart",ADM GENERAL / CAT INPATIENT,External via Internet,Yes,Pass,Fail,Not Testable,Fail,3,Yes,"FHIR was not avail during first round of testing - Issue logged
+https://apps.healthcare.elsevier.com/launch/clinicalkey
+https://apps.healthcare.elsevier.com/launch/clinicalSkillsProd
+https://apps.healthcare.elsevier.com/launch/clinicalkey-nursing
+
+9/25 - Clinical Skills errors: ""Unknown issuer: clinicalSkillsProd has no EHR configuration for https://wptst.nghs.com/fhir-tst/api/FHIR/DSTU2""
+",No
+1.39,None,None,None,None,,CSI ANC LAB,"VPN, ORU messages via corepoint",Kevin McNiel,Nelson Dowling-Darshna Patel,ANC LAB,External via VPN,Yes,,Pass,,Pass,3,Yes,,No
+1.47,"101017
+101018
+101471
+101017
+101016",100047,,,,Epic Video Client,Telehealth- uses SMS Sync queue,Mark Thomas,,Ambulatory Team,External via Internet,Yes,,,,Fail,3,Yes,"Steve reached out to Mychart team to inquire testing
+Unable to access backend menu/configs, chatting with epic for options
+We also must wait for patient data to be available before we can successfully test this
+
+Hannah needs to take a look at this - 9/25
+
+There could be more ports that werent discovered if we're only resolving the workflows where we encounter this. Client, Provider, Mobile, Translator, Regular Web",No
+1.56,,,,,,Fuse/Signal Radiation Oncology,"Fuse extracts data from Aria and it uses the data to track patient documentation, charges, etc in Aria. Fuse cranks out a report so that Rad Onc leadership can use to identify missing/incorrect charges, look at data insights 
+ 
+Technically if Aria is working, Fuse should be working too. 
+ 052825 - Aria worked for Varian testing. Do not have a way to test just the Fuse report.",,Amanda Osbourne-Lisa Thomas,CAT AMBULATORY,External via VPN,Yes,Pass,,Pass,Fail,3,Yes,"Listed as Corepoint in 3rd party, but is in fact interconnect and will need to be whitelisted!  Unable to access backend menu/configs, chatting with epic for options",No
+1.14,N/A,N/A,N/A,N/A,,Acumen - Fresenius medical Care,,,,,Other,No,No Test System,No Test System,No Test System,No Test System,3,Yes,Checking with Chris Wright.  Chris and Katie said it's all kidney care that goes through Corepoint and doesn't need to be tested. ,
+1.16,None,None,None,"640422
+640423",,Ambry HL7,"Corepoint HL7 ORM Inbound data feed
+Connect to Bridges in Epic, which sends to Interconnect",Kevin McNiel,Nelson Dowling,ANC LAB,External via VPN,Yes,Pass,,Pass,Pass,3,Yes,Interfaces/Katie Denning can take this 5.5.25,No
+1.25,None,None,None,640121,,Carefeed,"new horizons LTC, but CAT INPATIENT and ADM GENERAL do not know this application",Chris Wright,Katie Denning,INTERFACES,Other,Yes,,Pass,,Pass,3,Yes,"Interfaces/Katie Denning can take this 5.5.25
+CP_OB_Carefeed_ADT_File",No
+1.27,N/A,N/A,N/A,N/A,,Carta Healthcare Cartographer,Does not need to be tested for this project.,Anil Gullapalli,Anil Gullapalli,Data Services,External via Internet,Yes,No Test System,No Test System,No Test System,No Test System,3,Yes,"Per Anil, Does not need to be tested for this project",
+1.30,101080,None,None,"640100
+640102",,Ciox Healthsource," Clarity (ROI Vendor)- Test release of Information, have ECSA check trace viewer for errors.",Michael McNeilly,Drew Gardner,REV HIM / ECSA,External via Internet,Yes,No Test System,,No Test System,No Test System,3,Yes,"Drew checking with Kenny and Todd 9/15
+Mistakenly set to PASS in non-prd, no test system so will need to be test cutover",No
+1.32,,,,,,Cognitive Computing Nebula,"https://galaxy.epic.com/Redirect.aspx?DocumentID=100051721&PrefDocID=126443
+Need to work with Hannah to get IPs whitelisted
+Part of epic, so not needed to test",Anil Gullapalli,Anil Gullapalli,Data Services / ODBA,Other,Yes,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,3,No,N/A part of back end services to Epic,No
+1.34,N/A,N/A,N/A,N/A,,Cosmos,https://cosmos.epic.com/,Anil Gullapalli,Mark Pawloski,Data Services,Other,No,Fail,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,3,Yes,"Cosmos is a dataset created in collaboration with a community of health systems using Epic and is designed to improve patient care. By combining their data, participating organizations and Epic can make new discoveries and advance medicine. Cosmos also powers tools at the point of care, providing insights to clinicians that are tailored to the patient in front of them.",No
+1.37,N/A,N/A,N/A,N/A,,CRC- Payment Safe Page,"this is for credit card payments, not Cancer Risk Calculator as previously indicated",Tamara Bethel-Williams,Brandi Gaskin-Erin Cordova-Joshua Small,Rev Patient Access,External via Internet,No,Fail,No Test System,No Test System,No Test System,3,Yes,"CRC Payment Safe Experian Health is a specialized application designed to enhance financial transactions within the healthcare sector. Its primary function is to provide secure payment processing solutions, ensuring the confidentiality and integrity of sensitive financial information. Can't be tested in TST",No
+1.41,102520,None,None,None,,Cures FHIR- 21st Cures Act,"For testing FHIR connections, not required for this testing event!",Chris Wright,Katie Denning,INTERFACES,External via Internet,No,No Test System,No Test System,No Test System,No Test System,3,Yes,Chris Wright working on this. Not testable at this time.,No
+1.49,,,,,,E-Signature/Controlled Meds,Digital signing server,Cindy Sullivan,Nicole Benson-Meredith Rudeseal-Quentin Decker-Sarah Davis-Earl Turner-Maria Gray-Dawson Byrnes,CAT PHARMACY,On-Prem Only Communication,No,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,3,No,There is not a non-prod DSS server for testing controlled meds. Can't put non prod dss certs on production servers for testing. Post cutover only.,No
+1.60,,,,,,Get Well - Rounding and Video Client,Clinicians need real-time information to deliver the best patient care possible; leaders need intuitive analytic dashboards for managing operations; patients — and their families ,Tamara Bethel-Williams,"Brandi Gaskin, Erin Cordova",REV PATIENT ACCESS,External via VPN,Yes,,Pass,,No Test System,3,No,Goes through VPN,
+1.61,,,,"640320
+640985
+640987",,GRITS,"Interconnect Bridges interface
+https://www.grits.state.ga.us/gritsws/client_Service
+Also covers: Interconnect-QVC-TST  GRITS
+
+Enter/administer vax on tst patient Epic TST - verify can see in GRITS TST portal. Enter historical vax on GRITS tst patient, verify Epic pulls via VAX Query.
+052825 - GRITS tst did not show vaccine entered from Epic TST",Mark Thomas,Amanda Osborne,CAT AMBULATORY,External via Internet,Yes,Fail,Pass,Pass,No Test System,3,Yes,"Earl and Amanda B verified GRITS testing
+https://www.gritstest.state.ga.us/gritsws/client_Service?wsdl
+9/15 - GRITS doesn't allow testing in a PRD environment/can check real patients when data is available",No
+1.63,,,,,,Guardian Fusion (Guardian Research Network GRN Data Connection),Active API. Interconnect FHIR,Anil Gullapalli,Mark Pawloski,ITS DATA SERVICES,,No,No Test System,No Test System,No Test System,No Test System,3,,can't be tested in TST,
+1.65,,,,,,Happy Together Integrations,"Interconnect. Does it go through the VPN? We should follow up with Hannah on this one as well. Hannah says likely not VPN and instead through the Care Everywhere network. This is likely for support connective services.
+5/28  -  DId not see Care Everywhere connection Cloud TST",Mark Thomas,Amanda Osbourne-Lisa Thomas,CAT AMBULATORY,External via Internet,Yes,Fail,Pass,Pass,Post Cutover Test Only,3,Yes,a grouping within Care Everywhere. Can't put non prod care everywhere certs on the prod servers for testing this.  Post Cutover only. ,No
+1.66,,,,,,HCI Solutions- Medication Warning,"Instance only in POC, potentially orphaned and needs to be cleaned up not as part of this initiative.",Cindy Sullivan,Nicole Benson-Meredith Rudeseal-Quentin Decker-Sarah Davis-Earl Turner-Maria Gray-Dawson Byrnes,CAT PHARMACY,Other,No,No Test System,No Test System,No Test System,No Test System,3,No,Only in POC,No
+1.68,,,,,,ICD- National Cardiovascular Data Registry,"Instance only in POC, potentially orphaned and needs to be cleaned up not as part of this initiative.",Tina Chapman,Brittney Nix-Melissa Fontenot,ANC CARDIOLOGY,External via Internet,Yes,No Test System,No Test System,No Test System,No Test System,3,Yes,,No
+1.76,,,,,,Kyruus,"interconnect, gets schedule dates for a provider. FHIR API.Kyruus provided the following update: the Kyruus network team has confirmed that there are no integrations currently that would necessitate any updates for IP whitelisting. This work is all set to close. BKG. - search and schedule appt with Provider
+Backend system FHIR access essentially uses a generic service account to access data.  As a result, it is not applicable for patient-facing use cases.",Tamara Bethel-Williams,"Brandi Gaskin, Pam Shifflett, Jennifer Horn, Courtney Bailey",Rev Patient Access,Other,Yes,Pass,,Pass,Post Cutover Test Only,3,Yes,E0E Backend System. Approved through Showroom. ,No
+1.78,,,,,,MacroHelix,"stand-alone service from McKesson for the 340B. It only works in PRD because it has to have eligible patients with eligible meds with eligible insurance to generate a flat file that they place on a SFTP server. Not sure if we ""push"" the file to McKesson from the SFTP or they ""pull"" the file.
+
+The way that MOVEit connects to MacroHelix is via a SFTP connection, it is logging into ftp.mhiapps.com. I can set up a quick job if you want to send a test file over if you need to, but I don't see that we have anything built to send from Epic Test to MacroHelix in MOVEIt. We do have some PRD jobs. MOVEit is currently having no problems getting into the folder structure where we pick up files from EPIC Test
+",Cindy Sullivan,Benjamin Simmons,BI,,Yes,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,Post Cutover Test Only,3,No,,
+1.79,,,,,,Mapquest,Test UC on my way workflow via MyChart TST to see Mapquest map,Mark Thomas,Amanda Osbourne,CAT - MYCHART,External via Internet,Yes,Pass,Pass,Pass,Pass,3,Yes,"AWS 3 and AWS 4 successful (052825)
+9/15/25 - Amanda O - need the MyChart patient available for PRD. Cannot make a new one. Can test when patient data is back in PRD.
+9/24 Verified Mapquest map showed for UC On My Way workflow",No
+1.84,,100082,,,,NPLEx,,Cindy Sullivan,Earl Turner,Willow Amb,External via Internet,No,No Test System,No Test System,No Test System,No Test System,3,Yes,can't be tested in TST,
+1.86,,100081,,640337,,Olympus KE- endoscopy,,Leslie McClain / Nicola Baker-Camejo,Lissette Alonso,CAT INPATIENT,Other,Yes,Pass,,Pass,Pass,3,Yes,Was able to see images from the image link successfully. Goes through Corepoint and IC,No
+1.97,,,,,,Qpath/Telexy,"interface engine
+
+ADT corepoint will be pointed for TST (no vendor contact needed)
+Does PACS need to coordinate with this testing?
+Need traffic from AWS to interconnect into PACS. Q-path provides a complete workflow solution for point-of-care ultrasound to help manage credentialing, quality assurance, reporting, billing, storage, teaching, research, and more. ",Mitzi Donaldson,Ashley Tipton,CAT INPATIENT,Other,Yes,Pass,,Pass,Pass,3,Yes,,No
+1.92,,,,,,Phillips G3 SleepWare,"ORM/ORU corepoint. 
+Verified with Zachary Delimitros (Sleep Lab manager) we are not using the interface to send reports from Sleepware back into Epic. ",Mark Thomas,Amanda Osbourne-Lisa Thomas,CAT AMBULATORY,Other,No,No Test System,No Test System,No Test System,No Test System,3,No,We do not use this interface to send reports from Sleepware back into Epic. BUT we do pull patient name/MRN and NGHS employee names from Epic.,No
+1.95,,,,,,Press Ganey,"token request with Press Ganey
+https://epic.pressganey.com/api/v1/oauth2/token
+74.119.202.118,74.119.202.119
+Not through Epic, so we'll need to contact Press Ganey",John Hale,Kyle Hriczo,ADM GENERAL,,No,No Test System,No Test System,No Test System,No Test System,3,Yes,"of the group, I have reached back out to ask about working on phase 2 portion which is moving corepoint to the",No
+1.96,,,,,,PRISM-Opthamology,GNC does not use this application,Mark Thomas,Amanda Osborne,CAT AMBULATORY,Other,No,No Test System,No Test System,No Test System,No Test System,3,No,not used,No
+1.98,,,,,,QRDA,"The application serves as a tool for generating and processing Quality Reporting Document Architecture (QRDA) documents, specifically catering to the needs of the Centers for Medicare & Medicaid Services (CMS)",Frankie Grant,Shreya Kotak,Population Health,External via Internet,Yes,,Pass,,Pass,3,Yes,,No
+1.99,,,,,,Quest- Beaker ANC LAB results,,Kevin McNeil,Nelson Dowling,ANC LAB,Other,Yes,Fail,Pass,Pass,Pass,3,Yes,Ram will change endpoint and Steve will make sure queues are running.,No
+2.03,,200004,,,,Salucro Payment and Device Integration (MedEpay/Elavon),Longstreet Clinic,Jaime Frost,Sheila Snyder,CAT PHARMACY,External via Internet,No,No Test System,No Test System,No Test System,No Test System,3,Yes,"Not testable in TST. We'll need to engage Longstreet as well, since they're the ones that will need to run the actual transaction(s).   So we'll need a bit of lead time to make sure they're prepared to help when we reach that point.",No
+2.07,,,,,,SOC Telemed,Used to be Corepoint but is now FHIR intergration,Mitzi Donaldson,Ashley Tipton,CAT INPATIENT,Other,Yes,,Pass,,Fail,3,Yes,"Mostly working, but the expected data is not coming back into system from SOC -AT MD 9/25",No
+2.05,,,,,,Seqster Health,"Patient Facing FHIR Intergration. Medication.Read (R4)
+third party research site NGHS does not advertise, own, or support. Patients can go to it completely outside of us and sign us and it will link to their MyChart. The only thing we have ever done on it was allow the URL as safe. We cannot test it bc we would have to be a patient working with that outside research study. ",Mark Thomas,Amanda Osborne,CAT AMBULATORY,External via Internet,No,No Test System,No Test System,No Test System,Post Cutover Test Only,3,Yes,FHIR integration that is patient facing.  Uses open.id to authenticate to uses MyChart and then they allow access.  ,No
+2.08,,,,,,Steris SPM,Corepoint. Will not be ready as part of this testing event,Nicola Baker-Camejo,Lissette Alonso,CAT INPATIENT,,No,Not Testable,No Test System,,No Test System,3,,can't be tested in TST,No
+2.10,,,,,,TerminalWorks UniTwain,,Tamara Bethel-Williams,"Brandi Gaskin, Pam Shifflett, Jennifer Horn",REV PATIENT ACCESS,,Yes,Not Testable,No Test System,Not Testable,No Test System,3,,"Unitwain is surface tablets, we only have them deployed in the GSV ED right now, and we only have licenses for those deployed. We'll just need to coordinate a time with staff when one isnt in use.",
+2.11,,,100091,,,Unite Us,"Patient.Read
+
+https://uniteus.com/press/unite-us-launches-patent-pending-integration-between-ehrs-and-its-social-care-coordination-platform/
+https://emr.auth.uniteustraining.com/auth/smartonfhir
+",Frankie Grant,Shreya Kotak,Pop Health,External via Internet,Yes,,Pass,,Pass,3,Yes,"SMART on FHIR FDI Record, https://emr.auth.uniteus.io/",No
+2.13,,,,,,Waystar,,Tamara Bethel-Williams,"Brandi Gaskin, Pam Shifflett, Jennifer Horn, Courtney Bailey",Rev Patient Access,,No,Not Testable,Not Testable,Not Testable,No Test System,3,,can't be tested in TST,No

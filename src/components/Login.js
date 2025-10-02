@@ -15,6 +15,10 @@ import {
   Link
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { Button as KendoButton } from '@progress/kendo-react-buttons';
+import { TextBox } from '@progress/kendo-react-inputs';
+import { Card as KendoCard } from '@progress/kendo-react-layout';
+import { Notification } from '@progress/kendo-react-notification';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -31,7 +35,7 @@ const Login = () => {
 
     try {
       await login(email, password);
-      navigate('/projects');
+      navigate('/dashboard');
     } catch (err) {
       setError('Failed to sign in. Please check your credentials.');
     } finally {
@@ -40,84 +44,90 @@ const Login = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              EAMS
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Enterprise Architecture Management System
-            </Typography>
-            <Divider sx={{ mt: 2 }} />
-          </Box>
+    <div className="eams-header">
+      <div className="eams-container">
+        <div className="eams-title">EAMS</div>
+        <div className="eams-subtitle">Enterprise Architecture Management System</div>
+      </div>
+      
+      <Container component="main" maxWidth="sm">
+        <Box
+          sx={{
+            marginTop: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <KendoCard className="eams-card fade-in">
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography variant="h5" component="h2" gutterBottom color="primary">
+                Welcome Back
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Sign in to access your EAMS dashboard
+              </Typography>
+            </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Sign In'}
-            </Button>
-          </Box>
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+              <Box sx={{ mb: 2 }}>
+                <TextBox
+                  label="Username or Email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{ width: '100%' }}
+                  placeholder="Enter your username or email"
+                />
+              </Box>
+              
+              <Box sx={{ mb: 3 }}>
+                <TextBox
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{ width: '100%' }}
+                  placeholder="Enter your password"
+                />
+              </Box>
+              
+              <KendoButton
+                type="submit"
+                themeColor="primary"
+                size="large"
+                style={{ width: '100%', height: '48px' }}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={24} /> : 'Sign In'}
+              </KendoButton>
+            </Box>
 
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate('/password-reset')}
-              sx={{ mb: 2, display: 'block' }}
-            >
-              Forgot your password?
-            </Link>
-            <Typography variant="body2" color="text.secondary">
-              Demo Credentials: demo@example.com / password123
-            </Typography>
-          </Box>
-        </Paper>
-      </Box>
-    </Container>
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate('/password-reset')}
+                sx={{ mb: 2, display: 'block', color: 'primary.main' }}
+              >
+                Forgot your password?
+              </Link>
+              <Typography variant="body2" color="text.secondary">
+                Your Credentials: fscalzo or fscalzo@optimumhit.com / Babymakes7!
+              </Typography>
+            </Box>
+          </KendoCard>
+        </Box>
+      </Container>
+    </div>
   );
 };
 

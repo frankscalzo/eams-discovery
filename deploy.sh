@@ -9,6 +9,17 @@ echo "🚀 Application Management System - Quick Deploy"
 echo "=============================================="
 echo ""
 
+# Check Node.js version
+NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+if [[ $NODE_VERSION -lt 22 ]]; then
+    echo "❌ Node.js 22+ is required. Current version: $(node --version)"
+    echo "Please run: nvm install 22 && nvm use 22"
+    exit 1
+fi
+
+echo "✅ Node.js version: $(node --version)"
+echo ""
+
 # Check if scripts directory exists
 if [[ ! -d "scripts" ]]; then
     echo "❌ Scripts directory not found. Please run this from the project root."

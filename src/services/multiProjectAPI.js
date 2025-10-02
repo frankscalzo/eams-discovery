@@ -32,17 +32,65 @@ import Papa from 'papaparse';
 
 // Load config from public/config.json
 let config = null;
-fetch('/config.json')
-  .then(response => response.json())
-  .then(data => config = data)
-  .catch(error => console.error('Error loading config:', error));
+const loadConfig = async () => {
+  try {
+    const response = await fetch('/config.json');
+    config = await response.json();
+  } catch (error) {
+    console.error('Error loading config:', error);
+    config = {
+      awsRegion: 'us-east-1',
+      projectManagementTableName: 'eams-dev-projects',
+      websiteBucketName: 'eams-dev-discovery-904233104383'
+    };
+  }
+};
 
-// AWS SDK clients
-const dynamoClient = new DynamoDBClient({ region: config?.awsRegion || 'us-east-1' });
-const s3Client = new S3Client({ region: config?.awsRegion || 'us-east-1' });
-const textractClient = new TextractClient({ region: config?.awsRegion || 'us-east-1' });
-const comprehendClient = new ComprehendClient({ region: config?.awsRegion || 'us-east-1' });
-const bedrockClient = new BedrockRuntimeClient({ region: config?.awsRegion || 'us-east-1' });
+// Initialize config
+loadConfig();
+
+// AWS SDK clients - will be initialized after config loads
+let dynamoClient, s3Client, textractClient, comprehendClient, bedrockClient;
+
+const initializeClients = () => {
+  if (!dynamoClient) {
+    dynamoClient = new DynamoDBClient({ 
+      region: config?.awsRegion || 'us-east-1',
+      credentials: {
+        accessKeyId: 'demo-key',
+        secretAccessKey: 'demo-secret'
+      }
+    });
+    s3Client = new S3Client({ 
+      region: config?.awsRegion || 'us-east-1',
+      credentials: {
+        accessKeyId: 'demo-key',
+        secretAccessKey: 'demo-secret'
+      }
+    });
+    textractClient = new TextractClient({ 
+      region: config?.awsRegion || 'us-east-1',
+      credentials: {
+        accessKeyId: 'demo-key',
+        secretAccessKey: 'demo-secret'
+      }
+    });
+    comprehendClient = new ComprehendClient({ 
+      region: config?.awsRegion || 'us-east-1',
+      credentials: {
+        accessKeyId: 'demo-key',
+        secretAccessKey: 'demo-secret'
+      }
+    });
+    bedrockClient = new BedrockRuntimeClient({ 
+      region: config?.awsRegion || 'us-east-1',
+      credentials: {
+        accessKeyId: 'demo-key',
+        secretAccessKey: 'demo-secret'
+      }
+    });
+  }
+};
 
 // Helper functions for DynamoDB operations
 const marshallItem = (item) => {
@@ -723,11 +771,217 @@ export const bulkUploadAPI = {
   }
 };
 
+// Company API
+export const companyAPI = {
+  async getCompanies() {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const command = new ScanCommand({
+        TableName: 'eams-dev-companies',
+        FilterExpression: 'attribute_exists(CompanyID)'
+      });
+      
+      const result = await dynamoClient.send(command);
+      return result.Items?.map(item => unmarshallItem(item)) || [];
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      throw error;
+    }
+  },
+
+  async createCompany(companyData) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const companyId = `comp-${Date.now()}`;
+      const item = {
+        CompanyID: companyId,
+        ...companyData,
+        CreatedAt: new Date().toISOString(),
+        UpdatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: 'eams-dev-companies',
+        Item: marshallItem(item)
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true, company: item };
+    } catch (error) {
+      console.error('Error creating company:', error);
+      throw error;
+    }
+  },
+
+  async updateCompany(companyId, updates) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const updateExpression = 'SET UpdatedAt = :updatedAt';
+      const expressionAttributeValues = {
+        ':updatedAt': { S: new Date().toISOString() }
+      };
+      
+      // Add dynamic updates
+      Object.keys(updates).forEach((key, index) => {
+        updateExpression += `, #${key} = :val${index}`;
+        expressionAttributeValues[`:val${index}`] = { S: updates[key] };
+      });
+      
+      const command = new UpdateItemCommand({
+        TableName: 'eams-dev-companies',
+        Key: { CompanyID: { S: companyId } },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeNames: Object.keys(updates).reduce((acc, key) => {
+          acc[`#${key}`] = key;
+          return acc;
+        }, {}),
+        ExpressionAttributeValues: expressionAttributeValues
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating company:', error);
+      throw error;
+    }
+  },
+
+  async deleteCompany(companyId) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const command = new DeleteItemCommand({
+        TableName: 'eams-dev-companies',
+        Key: { CompanyID: { S: companyId } }
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      throw error;
+    }
+  }
+};
+
+// User API
+export const userAPI = {
+  async getUsers() {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const command = new ScanCommand({
+        TableName: 'eams-dev-users',
+        FilterExpression: 'attribute_exists(UserID)'
+      });
+      
+      const result = await dynamoClient.send(command);
+      return {
+        success: true,
+        users: result.Items?.map(item => unmarshallItem(item)) || [],
+        total: result.Items?.length || 0
+      };
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return { success: false, error: error.message, users: [], total: 0 };
+    }
+  },
+
+  async createUser(userData) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const userId = `user-${Date.now()}`;
+      const item = {
+        UserID: userId,
+        ...userData,
+        CreatedAt: new Date().toISOString(),
+        UpdatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: 'eams-dev-users',
+        Item: marshallItem(item)
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true, user: item };
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateUser(userId, updates) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const updateExpression = 'SET UpdatedAt = :updatedAt';
+      const expressionAttributeValues = {
+        ':updatedAt': { S: new Date().toISOString() }
+      };
+      
+      // Add dynamic updates
+      Object.keys(updates).forEach((key, index) => {
+        updateExpression += `, #${key} = :val${index}`;
+        expressionAttributeValues[`:val${index}`] = { S: updates[key] };
+      });
+      
+      const command = new UpdateItemCommand({
+        TableName: 'eams-dev-users',
+        Key: { UserID: { S: userId } },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeNames: Object.keys(updates).reduce((acc, key) => {
+          acc[`#${key}`] = key;
+          return acc;
+        }, {}),
+        ExpressionAttributeValues: expressionAttributeValues
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true, user: { UserID: userId, ...updates } };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async deleteUser(userId) {
+    try {
+      await loadConfig();
+      initializeClients();
+      
+      const command = new DeleteItemCommand({
+        TableName: 'eams-dev-users',
+        Key: { UserID: { S: userId } }
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true, user: { UserID: userId } };
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return { success: false, error: error.message };
+    }
+  }
+};
+
 // Export all APIs
 export default {
-  projects: projectAPI,
-  applications: applicationAPI,
+  projectAPI: projectAPI,
+  applicationAPI: applicationAPI,
   ai: aiAPI,
   userRoles: userRoleAPI,
-  bulkUpload: bulkUploadAPI
+  bulkUpload: bulkUploadAPI,
+  companyAPI: companyAPI,
+  userAPI: userAPI
 };

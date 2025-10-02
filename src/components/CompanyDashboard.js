@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getCompanies, getUsersByCompany } from '../services/localDataService';
+import SimpleCompanyForm from './SimpleCompanyForm';
 import {
   Box,
   Card,
@@ -46,17 +48,21 @@ import {
   Group,
   LocationOn,
   Code,
-  Notes
+  Notes,
+  ArrowBack
 } from '@mui/icons-material';
-import companyAPI from '../services/companyAPI';
+import { useNavigate } from 'react-router-dom';
+import mockAPI from '../services/mockAPI';
 import CompanyForm from './CompanyForm';
 
 const CompanyDashboard = () => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [simpleFormOpen, setSimpleFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -69,8 +75,23 @@ const CompanyDashboard = () => {
   const loadCompanies = async () => {
     try {
       setLoading(true);
-      const companiesList = await companyAPI.getCompanies();
-      setCompanies(companiesList);
+      
+      // Load real data from localStorage
+      const companiesData = getCompanies();
+      setCompanies(companiesData);
+      
+      // Calculate stats
+      const totalUsers = companiesData.reduce((total, company) => {
+        const companyUsers = getUsersByCompany(company.id);
+        return total + companyUsers.length;
+      }, 0);
+      
+      setCompanyStats({
+        totalCompanies: companiesData.length,
+        activeCompanies: companiesData.filter(c => c.status === 'Active').length,
+        totalUsers: totalUsers,
+        totalProjects: 0 // Will be updated when we add projects
+      });
     } catch (error) {
       console.error('Error loading companies:', error);
       setNotifications(prev => [...prev, {
@@ -86,7 +107,7 @@ const CompanyDashboard = () => {
 
   const loadCompanyStats = async (companyId) => {
     try {
-      const stats = await companyAPI.getCompanyStats(companyId);
+      const stats = await mockAPI.companyAPI.getCompanyStats(companyId);
       setCompanyStats(prev => ({
         ...prev,
         [companyId]: stats
@@ -113,7 +134,7 @@ const CompanyDashboard = () => {
 
   const confirmDeleteCompany = async () => {
     try {
-      const result = await companyAPI.archiveCompany(companyToDelete.CompanyID);
+      const result = await mockAPI.companyAPI.deleteCompany(companyToDelete.CompanyID);
       if (result.success) {
         await loadCompanies();
         setNotifications(prev => [...prev, {
@@ -487,13 +508,23 @@ const CompanyDashboard = () => {
       ))}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          Company Management
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            Back to Dashboard
+          </Button>
+          <Typography variant="h4">
+            Company Management
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={handleCreateCompany}
+          onClick={() => setSimpleFormOpen(true)}
         >
           Create Company
         </Button>
@@ -575,6 +606,16 @@ const CompanyDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Simple Company Form */}
+      <SimpleCompanyForm
+        open={simpleFormOpen}
+        onClose={() => setSimpleFormOpen(false)}
+        onSuccess={(newCompany) => {
+          console.log('Company created successfully:', newCompany);
+          loadCompanies(); // Refresh the list
+        }}
+      />
     </Box>
   );
 };

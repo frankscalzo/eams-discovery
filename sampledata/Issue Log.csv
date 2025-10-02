@@ -1,0 +1,104 @@
+﻿Issue Log,,,,,,,,,,,,,,,,,,,,,,
+ID,Issue Number,Date Raised,Time Raised,Raised By,Issue Owner,Runbook Task ID,Issue Severity,Issue Description,Actions Taken,Action By,Issue Status,Date Closed,Time Closed,Closed By,,,,,,,,
+1,,5/28/2025,,Marylynn O'Reilly,,,,"Glucommander did not launch.  SmartClickV3 experienced an unexpected problem causing your login to fail.
+SmartClickV3 unexpected exception processing Landing page. Error: G-GC-S-1-000006.
+System.IO.DirectoryNotFoundException: Could not find a part of the path 'D:\inetpub\wwwroot\GSENT.1689-t01.glytecenterprise.com.3512\csharp\Glucommander\Views\SMARTonFHIR\Landing\LandingError.cshtml'",Firewall updated by Ajay on 6/2/2025,Ajay,Closed,,,,,,,,,,,
+2,,5/28/2025,,"Lisa Turner, Amanda Osborne, Christian Haygood",,,,"When attempting to log into Haiku app as FAMMD I got message, ""Login Failure Communication with the server timed out. Seek assistance from an administrator if the problem persists. Code: TimedOut. ",Firewall updated by Ajay on 6/2/2025,Ajay,Closed,,,,,,,,,,,
+3,,5/28/2025,,Nicole Benson,,,,Willow - Insight RX - getting 504 Gateway Time-out error.  ,Firewall updated by Ajay on 6/2/2025,Ajay,Closed,,,,,,,,,,,
+4,,5/28/2025,,Ashley Tipton,,,,The new teleneuro SOC link for BRS is not working. The new build was migrated Monday and confirmed working in regular PRD. ,this works as expected after another refresh,,Closed,,,,,,,,,,,
+5,,5/28/2025,,Ram Chimpudi,,,,"BD Alaris Pumps need IPs swung internally. Add this to cutover runbook and find owner.
+
+vmasalariscce01 - 172.16.74.144  - CCE TEST
+ 
+vmasalariscce03 - 172.16.74.146  - CCE PROD ",BD Alaris system is not a production system ,,Closed,,,,,,,,,,,
+6,,5/28/2025,,Scott Sanderson,,,,"Login coming back to on-prem AD servers, causing excessive login times",Still digging but not an issue to testing on 6/17,,Closed,,,,,,,,,,,
+7,,5/28/2025,,Brett Kennedy,,,,"Change Healthcare/Interqual 500
+
+https://teams.microsoft.com/l/message/19:meeting_N2NiNzE2YWQtMTFhOC00YzY2LWI1NDMtN2NkM2M5NzE2Yjk3@thread.v2/1748454683746?context=%7B%22contextType%22%3A%22chat%22%7D",Firewall updated by Ajay on 6/2/2025,Ajay,Closed,,,,,,,,,,,
+8,,5/28/2025,,Bradley Gantt,,,,"Merge Cardio image links are prompting for user credentials. Normally it passes through automatically.
+
+https://vmascardcastst1.nghs.com/vericis_web/studyreviewdefault.asp?PID=%PATID%","SLG 10055493 opened with Epic
+
+Checked link in Hyperdrive TST on-prem and there is no prompt for user credentials",,Closed,,,,,,,,,,,
+9,,5/28/2025,,Bradley Gantt,,,,"ECG image links are prompting for user credentials. Normally it passes through automatically.
+
+https://vmasepiphtest3.nghs.com/webapi/webtrust2.php?wt_username=%CRYPTSTR;;;;;;URL%","SLG 10055493 opened with Epic
+
+Checked link in Hyperdrive TST on-prem and there is no prompt for user credentials",,Closed,,,,,Trouble,,,,,,
+10,,5/28/2025,,Ram Chimpudi,,,,GRITS Histroy Query - AIP-640320 - Msg transmission failed on Interconnect.,Firewall updated by Ajay on 6/2/2025,Ajay,Closed,,,,,,,,,,,
+11,,5/28/2025,,Ram Chimpudi,,,,ODI queue type - AIP- 640100 and 640102  timed out,was fixed on-Prem environment . its ready for -AWS testing on 6/17,,Closed,,,,,,,,,,,
+12,,,,Ron,,,,Internal Split DNS needs to be fixed before next run ,we should turn Exsisiting DNS A records for split  DNS of the urls to Cnames and move them up a level like we did for external  should be trackable tasks,,Closed,,,,,,,,,,,
+13,,,,Steve,,,,Logs not going to DFS,need to investage why should be trackable tasks,STeve R,Closed,,,,,,,,,,,
+14,,,,Chinmay/ David,,,,VPNs not listed in Routes and do not have conformation of VPNS are even in place ,need to investage and impliment should be trackable tasks,Chinmay,Closed,,,,,,,,,,,
+15,,,,Shawn,,,,Added 5 high ports need to document ,need to make sure they are documented ,Shawn,Closed,,,,,,,,,,,
+16,,6/19/25,,Nicole Benson,,,,Willow - Insight RX - getting error 404 - File or directory not found  ,,STeve R,Closed,,,,,,,,,,,
+17,,6/19/25,,Erin Cordova,,,Medium,"Change Healthcare/Interqual Connect - I'm able to launch Interqual from Epic without issues, but info is not filing back from Interqual into Epic. Per vendor, they use the SMART FHIR url to return into into Epic. 
+
+Non-prd file-back URL = https://wptst.nghs.com/iqconnect-tst/api/epic/2019/ManagedCare/UM/FileInterQualReview
+
+INTERQUAL CONNECT MEDICAL REVIEW SERVICE FOR PROVIDERS [FDI 100074]","moved its own Interconnect instance (like the on-prem environment), rather than having it consolidated on the webservice instance. ",STeve R,Closed,,,,,,,,,,,
+18,,6/19/25,,Earl Turner,,,Medium,"Surescripts doesn't currently work from cloud. Surescripts did also just take their service to the cloud yesterday, which may be impacting our testing today.","Earl and Amanda investigating
+Fixed as of 8/4",,Closed,,,,,,,,,,,
+19,,6/19/25,,Shelvia Stewart,,,Low,"Unknown issuer: clinicalkey-nursing has no EHR configuration uploaded for https://wptst.nghs.com/fhir-tst/api/FHIR/DSTU2
+
+Same behavior as on-prem",This is working as expected. AIDA dashboard launches post refresh,Shelvia,Open,,,,,,,,,,,
+20,,,,"Tomel, Amanda Osborne",,,Low,"Dragon mics don't work, button doesn't turn on to record.","Only really need to be tested for upgrade, but should not be neglected.",,Open,,,,,,,,,,,
+,,,,"Rick Edwards, Kevin McBride",,,Medium,Radiant Warp Drive items listed in Peripheral Testing unable to be tested until cnames get applied,"Once cnames are applied as part of permanent cutover, Rick will be looking to test these",,Open,,,,,,,,,,,
+,,,,Matt Fowler,,,Low,Cloud citrix storefront inactivity timeout is much shorter than on-prem - 30min vs 1hr,"Christopher Crisson setting time next week to troubleshoot surpressing the warning
+
+https://nghs.service-now.com/u_incident_task.do?sys_id=8e26efc433aea6d0d3bd3ec9bd5c7b9a&sysparm_record_target=u_incident_task&sysparm_record_row=1&sysparm_record_rows=1&sysparm_record_list=u_incident%3D6165a78033aea6d0d3bd3ec9bd5c7bd6%5EORDERBYnumber",Christopher Crisson,Closed,,,,,,,,,,,
+,,,,Peter Dcosta,,,Medium,"native Epic exports fail in cloud TST, works in on-prem",,STeve R,Open,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,9/9/25,,Drew Gardner,,,,"360 Encompass FHIR Communication Client ""Step 1 did not provide iss and launch""- error persists after previous troubleshooting
+
+Getting same ""Step 3"" invalid_grant failed to redeem a launch token for an authoraization code"" error - 9/25",Hannah is working with Care Everywhere TS to resolve phonebooking. Phonebooking fixed but still running into the issue described. Confirmed same behavior on both published app and cloud coders desktop.,Jason Deaver,Closed,,,,,,,,,,,
+,,9/9/25,,Lissette Alonso,,,,"Glucommander FHIR blocking
+
+""Your SmartClick V3 login failed because the EMR reported an error invalid_grant"" 9/25","Hannah is working with Care Everywhere TS to resolve phonebooking. Phonebooking fixed.
+Invalid OAuth 2.0 request - issue persists 9/16
+
+Converting this to Post Cutover Test only",,Closed,,,,,,,,,,,
+,,9/9/25,,Erin Cordova,,,,"Interqual 403 access forbidden FHIR
+After phonebook changes, this changed to a 500 error - persists as of 9/16, 9/25","Hannah is working with Care Everywhere TS to resolve phonebooking. Phonebooking fixed.
+The 500 error looks similar to the issue we had in TST where firewall rule needed to be updated by Ajay. Authorization code is getting rejected",Jason Deaver,Closed,9/25/25,4:13 PM,Erin Cordova,,,,,,,,
+,,9/9/25,,Nicole Benson,,,High,"InsightRX ""Error: No Org found loading"" - issue persists 9/16","Hannah is working with Care Everywhere TS to resolve phonebooking. Phonebooking fixed.
+
+Now running into ""Request failed with status code 500""
+
+Successful test after FHIR issues start to be resolved.",Jason Deaver,Closed,9/23/25,4:20,Nicole Benson,,,,,,,,
+,,9/9/25,,Chris Crisson,,,,Issue with synchronization between storefront servers,Chris is troubleshooting with the Citrix team,,Closed,9/18/25,9:00AM,Chris Crisson,,,,,,,,
+,,9/9/25,,Joshua Small,,,,"Experian Payment page ""Error getting payment session data from Epic""","Doesn't have a test system, marked for testing Post-Cutover",,Closed,,,,,,,,,,,
+,,9/9/25,,"Matt Fowler, Mitchell Hawes",,,,Unable to LDAP to EMPs/SERs needed for workflow testing,Troubleshooting with Mitchell and Hannah Hannah had to disable LDAP because something happened with the E0A import this morning.,,Closed,,,,,,,,,,,
+,,9/9/25,,Ram Chimpudi,,,,Ports 33317 need to be opened for Cardiology,Working with Jameson to get this opened,Jameson,Closed,,,,,,,,,,,
+,,9/11/25,,Ashley Tipton,,,,"SOC Telemed Corepoint doesn't launch - just a white screen - FHIR - issue persists as of 9/16, 9/25
+
+Able to send data now, but no data comes back in. Mitzi is chatting with their support today - 9/26",Troubleshooting with Ram - some routing needs to be adjusted by Steve - should we coordinate all of these to be fixed before next session?,Steve Reagan,Open,,,,,,,,,,,
+,,9/11/25,,"Donna Kinslow, Amanda Osborne",,,,CRA Health (Volpera) Corepoint - Not returning data - FHIR,Troubleshooting with Ram - some routing needs to be adjusted by Steve - should we coordinate all of these to be fixed before next session?,Steve Reagan,Open,,,,,,,,,,,
+,,9/12/25,,Nicole Benson,,,,"Cloud TST InsightRX - ""Epic OAuth sever responded with: undefined :: URI...""","attempting again today (9/12) and checking logs
+Nicole is reaching out to InsightRX support",Steve Reagan,Closed,16-Sep,1140,NB - it is currently working,,,,,,,,
+,,9/12/25,,Lisa Fiorucci,,,High,Unspecified Rover disruptions to the training team in TST ClinDoc,"Need to chat with Peter Dcosta when he's back on Tues 9/16
+Steve and Mitchell are working on getting Peter the proper config file for PRD 9/18
+
+ClinDoc workflows test properly, conducted flowsheets, meds, orders, patient education,, notes 9/25",Steve Reagan,Closed,25-Sep,,Peter Dcosta,,,,,,,,
+,,9/15/25,,Chris Chumbley,,,Medium,Zebra printers from thin clients don't work,Steve investigating,Steve Reagan,Open,,,,,,,,,,,
+,,9/15/25,,Chris Chumbley,,,Medium,Scanning doesn't work out of epic PRD thin client,"Works as expected from TST and Scandall Pro, just not from within thin client Cloud PRD",Tomel Morrison,Closed,,,,,,,,,,,
+,,9/15/25,,Chris Chumbley,,,Low,Signature pads don't work out of epic thin client,"Appears broken on image, Citrix team investigating",Tomel Morrison,Closed,,,,,,,,,,,
+,,9/16/25,,Earl Turner,,,Medium,Willow AMB not properly querying patient data. LC is working correctly in this manor.,Jason made a change and this is now resolved,Jason Deaver,Closed,,,,,,,,,,,
+,,9/16/25,,Shelvia Stewart,,,Low,"AIDA Dashboard gets stuck on loading, no other errors - FHIR Issue
+
+New error ""invalid_grant failed to redeem a launch token for an authorization code"" - 9/25",,Jason Deaver,Closed,,,,,,,,,,,
+,,9/16/25,,Chris Chumbley,,,Medium,Sectra PACS running into networking issue with VPN tunnel,David is working with Ron on the routing issue,Ron Metzger,Open,,,,,,,,,,,
+,,9/18/25,,Lisa Thomas,,,Medium,"Barcode scanner for Ambulatory workflows silently fails in Cloud PRD Smoke Test, from thin client desktop app and published app. Works as expected in TST.",Engaging citrix team,Tomel Morrison,Open,,,,,,,,,,,
+,,9/18/25,,Mitzi Donaldson,,,Low,"Dragon mic app isn't able to find the attached Dragon mic device. We had a successful test on the Dragon device,  earlier in the day, but the difference here is that Mitzi started her test with the mobile app as the mic, which also worked.
+
+Still an issue 9/25",Engaging citrix team,Tomel Morrison,Open,,,,,,,,,,,
+,,9/25/25,,Jennifer Horn,,,Low,Intrado Televox not getting a message,Jason Deaver,Jason Deaver,Closed,25-Sep,,,,,,,,,,
+,,9/25/25,,Shelvia Stewart,,,Low,"Clinical Skills errors: ""Unknown issuer: clinicalSkillsProd has no EHR configuration for https://wptst.nghs.com/fhir-tst/api/FHIR/DSTU2""",,Jason Deaver,Closed,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,

@@ -26,7 +26,7 @@ import {
   ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { useProject } from '../contexts/ProjectContext';
-import multiProjectAPI from '../services/multiProjectAPI';
+import mockAPI from '../services/mockAPI';
 
 const ApplicationForm = () => {
   const { currentProject } = useProject();
@@ -51,7 +51,7 @@ const ApplicationForm = () => {
     Confidence: 0,
     TestingNotes: '',
     IntegrationType: '',
-    LeanIXData: {
+    EAMSData: {
       criticality: '',
       vendor: '',
       vendorContact: '',
@@ -72,7 +72,7 @@ const ApplicationForm = () => {
   const loadApplication = async () => {
     try {
       setLoading(true);
-      const application = await multiProjectAPI.applications.getApplication(currentProject.id, id);
+      const application = await mockAPI.applications.getApplication(currentProject.id, id);
       setFormData(application);
     } catch (err) {
       console.error('Error loading application:', err);
@@ -125,10 +125,10 @@ const ApplicationForm = () => {
 
     try {
       if (isEdit) {
-        await multiProjectAPI.applications.updateApplication(currentProject.id, id, formData);
+        await mockAPI.applications.updateApplication(currentProject.id, id, formData);
         setSuccess('Application updated successfully');
       } else {
-        await multiProjectAPI.applications.createApplication(currentProject.id, formData);
+        await mockAPI.applications.createApplication(currentProject.id, formData);
         setSuccess('Application created successfully');
       }
       
@@ -364,11 +364,11 @@ const ApplicationForm = () => {
             </Accordion>
           </Grid>
 
-          {/* LeanIX Data */}
+          {/* EAMS Data */}
           <Grid item xs={12}>
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="h6">LeanIX Data</Typography>
+                <Typography variant="h6">EAMS Data</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Grid container spacing={3}>
@@ -376,8 +376,8 @@ const ApplicationForm = () => {
                     <FormControl fullWidth>
                       <InputLabel>Criticality</InputLabel>
                       <Select
-                        value={formData.LeanIXData.criticality}
-                        onChange={(e) => handleInputChange('LeanIXData.criticality', e.target.value)}
+                        value={formData.EAMSData.criticality}
+                        onChange={(e) => handleInputChange('EAMSData.criticality', e.target.value)}
                       >
                         <MenuItem value="Critical">Critical</MenuItem>
                         <MenuItem value="High">High</MenuItem>
@@ -390,24 +390,24 @@ const ApplicationForm = () => {
                     <TextField
                       fullWidth
                       label="Vendor Name"
-                      value={formData.LeanIXData.vendor}
-                      onChange={(e) => handleInputChange('LeanIXData.vendor', e.target.value)}
+                      value={formData.EAMSData.vendor}
+                      onChange={(e) => handleInputChange('EAMSData.vendor', e.target.value)}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
                       label="Vendor Contact"
-                      value={formData.LeanIXData.vendorContact}
-                      onChange={(e) => handleInputChange('LeanIXData.vendorContact', e.target.value)}
+                      value={formData.EAMSData.vendorContact}
+                      onChange={(e) => handleInputChange('EAMSData.vendorContact', e.target.value)}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth>
                       <InputLabel>Long Term Goal</InputLabel>
                       <Select
-                        value={formData.LeanIXData.longTermGoal}
-                        onChange={(e) => handleInputChange('LeanIXData.longTermGoal', e.target.value)}
+                        value={formData.EAMSData.longTermGoal}
+                        onChange={(e) => handleInputChange('EAMSData.longTermGoal', e.target.value)}
                       >
                         <MenuItem value="Invest">Invest</MenuItem>
                         <MenuItem value="Maintain">Maintain</MenuItem>
@@ -419,16 +419,16 @@ const ApplicationForm = () => {
                     <TextField
                       fullWidth
                       label="Support Group"
-                      value={formData.LeanIXData.supportGroup}
-                      onChange={(e) => handleInputChange('LeanIXData.supportGroup', e.target.value)}
+                      value={formData.EAMSData.supportGroup}
+                      onChange={(e) => handleInputChange('EAMSData.supportGroup', e.target.value)}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={formData.LeanIXData.containsPHI}
-                          onChange={(e) => handleInputChange('LeanIXData.containsPHI', e.target.checked)}
+                          checked={formData.EAMSData.containsPHI}
+                          onChange={(e) => handleInputChange('EAMSData.containsPHI', e.target.checked)}
                         />
                       }
                       label="Contains PHI"

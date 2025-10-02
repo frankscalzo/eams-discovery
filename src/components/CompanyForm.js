@@ -45,9 +45,62 @@ import {
   Cancel
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
-import companyAPI from '../services/companyAPI';
-import teamsAPI from '../services/teamsAPI';
-import confluenceAPI from '../services/confluenceAPI';
+import mockAPI from '../services/mockAPI';
+
+// US States list for dropdown
+const US_STATES = [
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' },
+  { code: 'DC', name: 'District of Columbia' }
+];
 
 const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
   const [activeStep, setActiveStep] = useState(0);
@@ -58,7 +111,6 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
 
   const [formData, setFormData] = useState({
     CompanyName: '',
-    State: '',
     Address: {
       street: '',
       city: '',
@@ -157,41 +209,33 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
       setLoading(true);
       
       if (mode === 'create') {
-        const result = await companyAPI.createCompany({
+        const result = await mockAPI.companyAPI.createCompany({
           ...formData,
           CreatedBy: 'current-user' // This should come from auth context
         });
         
-        if (result.success) {
-          setNotifications(prev => [...prev, {
-            id: Date.now(),
-            type: 'success',
-            message: 'Company created successfully!',
-            timestamp: new Date()
-          }]);
-          
-          if (onSave) {
-            onSave(result.company);
-          }
-        } else {
-          throw new Error(result.error);
+        setNotifications(prev => [...prev, {
+          id: Date.now(),
+          type: 'success',
+          message: 'Company created successfully!',
+          timestamp: new Date()
+        }]);
+        
+        if (onSave) {
+          onSave(result);
         }
       } else {
-        const result = await companyAPI.updateCompany(company.CompanyID, formData);
+        const result = await mockAPI.companyAPI.updateCompany(company.id, formData);
         
-        if (result.success) {
-          setNotifications(prev => [...prev, {
-            id: Date.now(),
-            type: 'success',
-            message: 'Company updated successfully!',
-            timestamp: new Date()
-          }]);
-          
-          if (onSave) {
-            onSave({ ...company, ...formData });
-          }
-        } else {
-          throw new Error(result.error);
+        setNotifications(prev => [...prev, {
+          id: Date.now(),
+          type: 'success',
+          message: 'Company updated successfully!',
+          timestamp: new Date()
+        }]);
+        
+        if (onSave) {
+          onSave({ ...company, ...formData });
         }
       }
     } catch (error) {
@@ -214,33 +258,33 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
       setUploading(true);
       setUploadProgress(0);
 
-      const result = await companyAPI.uploadCompanyFile(
-        company?.CompanyID || 'temp',
-        newFile,
-        fileType,
-        fileDescription
-      );
+      // Mock file upload - in real implementation, this would upload to S3
+      const mockFile = {
+        id: Date.now().toString(),
+        name: newFile.name,
+        type: fileType,
+        description: fileDescription,
+        size: newFile.size,
+        uploadedAt: new Date().toISOString(),
+        url: URL.createObjectURL(newFile)
+      };
 
-      if (result.success) {
-        setFormData(prev => ({
-          ...prev,
-          CompanyFiles: [...prev.CompanyFiles, result.file]
-        }));
+      setFormData(prev => ({
+        ...prev,
+        CompanyFiles: [...prev.CompanyFiles, mockFile]
+      }));
 
-        setNotifications(prev => [...prev, {
-          id: Date.now(),
-          type: 'success',
-          message: `File "${newFile.name}" uploaded successfully!`,
-          timestamp: new Date()
-        }]);
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        type: 'success',
+        message: `File "${newFile.name}" uploaded successfully!`,
+        timestamp: new Date()
+      }]);
 
-        setFileUploadDialog(false);
-        setNewFile(null);
-        setFileDescription('');
-        setFileType('Other');
-      } else {
-        throw new Error(result.error);
-      }
+      setFileUploadDialog(false);
+      setNewFile(null);
+      setFileDescription('');
+      setFileType('Other');
     } catch (error) {
       console.error('Error uploading file:', error);
       setNotifications(prev => [...prev, {
@@ -248,7 +292,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         type: 'error',
         message: `Failed to upload file: ${error.message}`,
         timestamp: new Date()
-      }];
+      }]);
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -302,21 +346,13 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
 
   const renderBasicInformation = () => (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
+      <Grid item xs={12}>
         <TextField
           fullWidth
           label="Company Name"
           value={formData.CompanyName}
           onChange={(e) => handleInputChange('CompanyName', e.target.value)}
           required
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
-          label="State"
-          value={formData.State}
-          onChange={(e) => handleInputChange('State', e.target.value)}
         />
       </Grid>
       <Grid item xs={12}>
@@ -341,12 +377,20 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         />
       </Grid>
       <Grid item xs={12} md={4}>
-        <TextField
-          fullWidth
-          label="State"
-          value={formData.Address.state}
-          onChange={(e) => handleInputChange('Address.state', e.target.value)}
-        />
+        <FormControl fullWidth>
+          <InputLabel>State</InputLabel>
+          <Select
+            value={formData.Address.state}
+            onChange={(e) => handleInputChange('Address.state', e.target.value)}
+            label="State"
+          >
+            {US_STATES.map((state) => (
+              <MenuItem key={state.code} value={state.code}>
+                {state.name} ({state.code})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Grid>
       <Grid item xs={12} md={4}>
         <TextField

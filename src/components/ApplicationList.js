@@ -37,7 +37,7 @@ import {
   Upload as UploadIcon
 } from '@mui/icons-material';
 import { useProject } from '../contexts/ProjectContext';
-import multiProjectAPI from '../services/multiProjectAPI';
+import mockAPI from '../services/mockAPI';
 import ExportTools from './ExportTools';
 import CloneDialog from './CloneDialog';
 
@@ -59,7 +59,7 @@ const ApplicationList = () => {
   const loadApplications = async () => {
     try {
       setLoading(true);
-      const data = await multiProjectAPI.applications.getApplications(currentProject.id);
+      const data = await mockAPI.applications.getApplications(currentProject.id);
       setApplications(data);
     } catch (err) {
       console.error('Error loading applications:', err);
@@ -87,7 +87,7 @@ const ApplicationList = () => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this application?')) {
       try {
-        await multiProjectAPI.applications.deleteApplication(
+        await mockAPI.applications.deleteApplication(
           currentProject.id, 
           selectedApplication.ApplicationID
         );
@@ -114,7 +114,7 @@ const ApplicationList = () => {
         projectId: cloneData.projectId
       };
       
-      await multiProjectAPI.applications.createApplication(cloneData.projectId, clonedApp);
+      await mockAPI.applications.createApplication(cloneData.projectId, clonedApp);
       setCloneDialogOpen(false);
       await loadApplications();
     } catch (err) {
@@ -232,11 +232,11 @@ const ApplicationList = () => {
                 </TableCell>
                 <TableCell>
                   <Chip 
-                    label={app.LeanIXData?.criticality || 'Not set'} 
+                    label={app.EAMSData?.criticality || 'Not set'} 
                     color={
-                      app.LeanIXData?.criticality === 'Critical' ? 'error' :
-                      app.LeanIXData?.criticality === 'High' ? 'warning' :
-                      app.LeanIXData?.criticality === 'Medium' ? 'info' : 'default'
+                      app.EAMSData?.criticality === 'Critical' ? 'error' :
+                      app.EAMSData?.criticality === 'High' ? 'warning' :
+                      app.EAMSData?.criticality === 'Medium' ? 'info' : 'default'
                     }
                     size="small"
                   />

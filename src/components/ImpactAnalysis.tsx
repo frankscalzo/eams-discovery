@@ -522,3 +522,4 @@ const ImpactAnalysis: React.FC<ImpactAnalysisProps> = ({
 };
 
 export default ImpactAnalysis;
+e the leanix 

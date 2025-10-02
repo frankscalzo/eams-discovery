@@ -39,7 +39,7 @@ import {
   TableChart as TableIcon
 } from '@mui/icons-material';
 import { useProject } from '../contexts/ProjectContext';
-import multiProjectAPI from '../services/multiProjectAPI';
+import mockAPI from '../services/mockAPI';
 import CostMonitoring from './CostMonitoring';
 
 const Dashboard = () => {
@@ -60,7 +60,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await multiProjectAPI.applications.getApplications(currentProject.id);
+      const data = await mockAPI.applications.getApplications(currentProject.id);
       setApplications(data);
     } catch (err) {
       console.error('Error loading applications:', err);
@@ -312,7 +312,7 @@ const Dashboard = () => {
                 <SecurityIcon color="warning" sx={{ mr: 2, fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">
-                    {applications.filter(app => app.LeanIXData?.criticality === 'Critical').length}
+                    {applications.filter(app => app.EAMSData?.criticality === 'Critical').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Critical Applications
@@ -393,10 +393,10 @@ const Dashboard = () => {
                               <Typography variant="subtitle1">
                                 {app.ApplicationName || 'Unnamed Application'}
                               </Typography>
-                              {app.LeanIXData?.criticality && (
+                              {app.EAMSData?.criticality && (
                                 <Chip 
-                                  label={app.LeanIXData.criticality} 
-                                  color={getCriticalityColor(app.LeanIXData.criticality)} 
+                                  label={app.EAMSData.criticality} 
+                                  color={getCriticalityColor(app.EAMSData.criticality)} 
                                   size="small" 
                                 />
                               )}

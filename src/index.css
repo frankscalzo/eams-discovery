@@ -1,10 +1,31 @@
+/* Import KendoReact Default Theme */
+@import '@progress/kendo-theme-default/dist/all.css';
+
+/* Custom EAMS Theme Overrides */
+:root {
+  --eams-primary: #1976d2;
+  --eams-secondary: #424242;
+  --eams-accent: #ff4081;
+  --eams-success: #4caf50;
+  --eams-warning: #ff9800;
+  --eams-error: #f44336;
+  --eams-info: #2196f3;
+  --eams-background: #fafafa;
+  --eams-surface: #ffffff;
+  --eams-text-primary: #212121;
+  --eams-text-secondary: #757575;
+  --eams-border: #e0e0e0;
+  --eams-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Global Styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--eams-background);
+  color: var(--eams-text-primary);
 }
 
 code {
@@ -18,4 +39,100 @@ code {
 
 #root {
   height: 100vh;
+}
+
+/* KendoReact Theme Customizations */
+.k-theme-default {
+  --kendo-color-primary: var(--eams-primary);
+  --kendo-color-secondary: var(--eams-secondary);
+  --kendo-color-success: var(--eams-success);
+  --kendo-color-warning: var(--eams-warning);
+  --kendo-color-error: var(--eams-error);
+  --kendo-color-info: var(--eams-info);
+}
+
+/* EAMS Custom Components */
+.eams-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.eams-card {
+  background: var(--eams-surface);
+  border-radius: 8px;
+  box-shadow: var(--eams-shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.eams-header {
+  background: linear-gradient(135deg, var(--eams-primary) 0%, #1565c0 100%);
+  color: white;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+.eams-title {
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin: 0;
+  text-align: center;
+}
+
+.eams-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Status Indicators */
+.status-active {
+  color: var(--eams-success);
+  font-weight: 500;
+}
+
+.status-pending {
+  color: var(--eams-warning);
+  font-weight: 500;
+}
+
+.status-inactive {
+  color: var(--eams-error);
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .eams-container {
+    padding: 10px;
+  }
+  
+  .eams-title {
+    font-size: 2rem;
+  }
+  
+  .eams-card {
+    padding: 16px;
+  }
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }

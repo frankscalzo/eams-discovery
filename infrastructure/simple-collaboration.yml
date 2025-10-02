@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Simple Real-time Collaboration Infrastructure for EAMS'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'dev'
+    AllowedValues: ['dev', 'staging', 'prod']
+    Description: 'Environment name'
+  
+  ProjectName:
+    Type: String
+    Default: 'eams'
+    Description: 'Project name prefix for resources'
+  
+  ServiceName:
+    Type: String
+    Default: 'discovery'
+    Description: 'Service name for URL generation'
+
+Resources:
+  # WebSocket API
+  WebSocketAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${ProjectName}-${ServiceName}-websocket-${Environment}'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Description: WebSocket API for real-time collaboration
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # WebSocket Stage
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      StageName: !Ref Environment
+      AutoDeploy: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # Connections Table for WebSocket Management
+  ConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-${ServiceName}-connections-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ConnectionId
+          AttributeType: S
+        - AttributeName: EntityKey
+          AttributeType: S
+        - AttributeName: UserId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ConnectionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EntityIndex
+          KeySchema:
+            - AttributeName: EntityKey
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: UserId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # IAM Role for WebSocket Handler
+  WebSocketHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WebSocketHandlerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt ConnectionsTable.Arn
+                  - !Sub '${ConnectionsTable.Arn}/index/*'
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketAPI}/*'
+
+  # WebSocket Lambda Function
+  WebSocketHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${ServiceName}-websocket-handler-${Environment}'
+      CodeUri: src/lambda/websocket/
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 30
+      Role: !GetAtt WebSocketHandlerRole.Arn
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE: !Ref ConnectionsTable
+          WEBSOCKET_API_ID: !Ref WebSocketAPI
+          WEBSOCKET_STAGE: !Ref Environment
+      Events:
+        Connect:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $connect
+        Disconnect:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $disconnect
+        Default:
+          Type: Api
+          Properties:
+            Api: !Ref WebSocketAPI
+            Route: $default
+
+Outputs:
+  WebSocketAPIEndpoint:
+    Description: WebSocket API endpoint
+    Value: !Sub 'wss://${WebSocketAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketAPIEndpoint'
+
+  ConnectionsTableName:
+    Description: DynamoDB table for WebSocket connections
+    Value: !Ref ConnectionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-ConnectionsTableName'
+
+  WebSocketAPIId:
+    Description: WebSocket API ID
+    Value: !Ref WebSocketAPI
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketAPIId'
+
+
+
+

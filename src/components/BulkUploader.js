@@ -34,7 +34,7 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
-import { aiAPI, bulkUploadAPI } from '../services/multiProjectAPI';
+import mockAPI from '../services/mockAPI';
 
 const BulkUploader = ({ projectId, onSuccess }) => {
   const [activeStep, setActiveStep] = useState(0);

@@ -18,6 +18,7 @@ import {
   AccountTree, 
   AttachMoney,
   Architecture,
+  People,
   Menu as MenuIcon,
   AccountCircle
 } from '@mui/icons-material';
@@ -76,6 +77,15 @@ const Layout = () => {
 
           <Button
             color="inherit"
+            startIcon={<Dashboard />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 1 }}
+          >
+            Home
+          </Button>
+
+          <Button
+            color="inherit"
             startIcon={<Business />}
             onClick={() => navigate('/companies')}
             sx={{ mr: 1 }}
@@ -85,11 +95,20 @@ const Layout = () => {
 
           <Button
             color="inherit"
-            startIcon={<Dashboard />}
+            startIcon={<Apps />}
             onClick={() => navigate('/projects')}
             sx={{ mr: 1 }}
           >
             Projects
+          </Button>
+
+          <Button
+            color="inherit"
+            startIcon={<People />}
+            onClick={() => navigate('/users')}
+            sx={{ mr: 1 }}
+          >
+            Users
           </Button>
 
           <IconButton

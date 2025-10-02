@@ -1,0 +1,62 @@
+﻿Application,Peripherals needed with thin client [All machines enabled for both Epic and Network printing],Location of test machine,Able to be tested in TST?,Tested by and Date,Cloud TST Pass/Fail,Tested by and Date,Cloud PRD Smoke Test Pass/Fail,Comments
+Cadence,Document Scanner,Lab,Yes,,Fail,,Fail,
+,Label Printer (Patient),,,,Fail,,Pass,"We don't use a specialized label printer, but printed successfully to 1405-EPIC-PRINTER-4"
+,Signature pad,,Yes,,Fail,,Pass,
+,Camera,,,,Fail,,Pass,
+,Credit Card,,No,,Fail,,Post-Cutover,We received a pass on this with Chestnut pilot
+,Ambir Scanner (ID card),,,,Fail,,Fail,"Same error as document scanner, but I believe our users are no longer using ambir scanners."
+Grand Central,Document Scanner,Lab,Yes,,Fail,9/24/25; EKC,Fail,"""Error! The remote server location was not set from either the location or the environment ID."""
+,Label Printer (Patient),,,,Fail,9/24/25; EKC,Pass,"We don't use a specialized label printer, but printed successfully to 1405-EPIC-PRINTER-4"
+,Signature pad,,Yes,,Fail,9/24/25; EKC,Pass,
+,Camera,,Yes,,Fail,9/24/25; EKC,Pass,
+,Credit Card,,No,,Fail,,Post-Cutover,We received a pass on this with Chestnut pilot
+,Ambir Scanner (ID card),,,,Fail,9/24/25; EKC,Fail,"Same error as document scanner, but I believe our users are no longer using ambir scanners."
+Radiant,Document Scanner (fujitsu),Lab,Yes,6/6/25,Pass,"9/15/2025 CC,BS",Pass,
+,Document Scanner (canon),,,,,"9/23/2025 CC, DK",Pass,Had to requisition one for the lab from our Field Services partners
+,Document Printing (Mammography),,,,,"9/23/2205 CC, DK",Fail,Can't find printers from PRD
+,Barcode Scanner,,,,Pass,"9/15/2025 CC,BS",Pass,"Confirmed again on 9/23
+Wireless scanner in the lab doesn't seem to scan"
+,Signature pad,,Yes,6/6/25,Pass,"9/15/2025 CC,BS",Pass,"Epic can't connect, shows broken in image. Citrix team looking at. Pass 9/23"
+,Zebra Printer,,Yes,6/6/25,Pass,"9/15/2025 CC,BS",Fail,"LWS default to down, enabling uncovered a new issue. Steve investigating. Still not available as of 9/23"
+Orders,Dragon Mic,Lab,Yes,,Fail,,Fail,
+ASAP,Dragon Mic,Lab,Yes,,Fail,,Fail,"Buttons not available, likely due to OLDTST build/records not being up to date"
+,Barcode Scanner,,Yes,,Pass,,Pass,
+,Document Scanner,,Yes,,Pass,,Fail,Hyland server issue
+,Zebra,,Yes,,Pass,,Pass,
+Optesia,Barcode Scanner,Lab,Yes,6/19/25,Pass,,Pass,
+,Dragon Mic,,Yes,,Fail,,Fail,
+,topaz signature pad,,Yes,6/19/25,Pass,,Pass,
+,Badge Reader,,Yes,6/19/25,Pass,,Pass,
+Cupid,Barcode Scanner,Lab,,Melissa,Pass,9/23/25 Nick,Pass,"acc # 5832 (TST) , acc# 4848 (PRD)"
+,Desktop integration,,,,Pass,9/16/25 BG,Pass,
+,Mac Lab,,,,Pass,9/16/25 BG,Pass,
+,HeartSuite Hemo ,,,,Pass,9/16/25 BG,Pass,
+,Epiphany,,,,Pass,9/16/25 BG,Pass,
+"
+Beacon",Barcode Scanner,Lab,Yes,,Pass,9/25/25 LT,Pass,
+,Document Scanner,,Yes,,Pass,9/25/25 LT,Fail,
+,Dragon Mic,,Yes,,Fail,9/25/25 LT,Pass,
+ClinDoc,Barcode Scanner,Lab,Yes,6/11/25 RM,Pass,9/17/25 RM,Pass,
+,Zebra Printer,,Yes,6/11/25 RM,Pass,9/17/25 RM,Fail,
+Stork,Barcode Scanner,Lab,Yes,6/11/25 RM,Pass,9/17/25 RM,Pass,
+,Zebra Printer,,Yes,6/11/25 RM,Pass,9/17/25 RM,Fail,
+LTC,ClinDoc will test peripherals for LTC,Lab,Yes,6/11/25 RM,Pass,9/17/25 RM,Fail,
+Ambulatory,Dragon Mic,Lab,Yes,6/19/25 LT,Pass,9/25/25 LT,Pass,"
+successful test on thin client 9/18"
+,Barcode scanning,,,,Pass,9/25/25 LT,Pass,"Works on TST, silently fails on PRD LT 9/18/25
+Reaching out to citrix team"
+,Label Printing,,,,,9/25/25 LT,Fail,Same issues as others LT 9/18/25
+,Docment Printing,,,,,9/25/25 LT,Pass,
+,Document Scanner,,Yes,6/19/25 LT,Pass,9/25/25 LT,Fail,Same issues as others LT 9/18/25
+Hospice,"Barcode Scanner, Zebra Printer, Label Printer (Patient)",Lab,Yes,6/19/25 CB,Pass,,Pass,ClinDoc covers Hospice
+Willow IP,Label Printer (Meds),Lab,Yes,6/19/2025 NB,Pass,9/16/25  NB,Pass,and tested printing to Xerox - All passed 9/25/25 NB
+,Barcode Scanner (Meds),,Yes,6/19/2025 NB,Pass,9/9/25 NB,Pass,
+Willow OP,Label Printer (Meds),Lab,,,Pass,,Pass,
+,Scanner (Prescription),,,,,,Pass,
+Beaker,Zebra Printer,Lab,Yes,,Pass,,Pass,
+,Barcode Scanner,,Yes,,Pass,,Pass,
+,Rover (iOS and Android), ,Yes,,Pass,,Pass,
+Ambulatory/MyChart,Haiku, Lab,Yes,6/19/25,Pass,9/25/25 LT,Pass,
+,Canto, Lab,Yes,6/19/25,Pass,9/25/25 LT,Pass,
+ClinDoc,iPad, ,,,,,Pass,
+HIM,ROI & Utility client, ,Yes,6/17/2025 Ty. A,Pass,9/9/25 TA,Fail,Working with Vendors (epic and onbase)

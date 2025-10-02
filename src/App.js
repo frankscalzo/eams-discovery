@@ -1,21 +1,24 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Box } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import Login from './components/Login';
 import PasswordReset from './components/PasswordReset';
-import ProjectSelector from './components/ProjectSelector';
-import Dashboard from './components/Dashboard';
-import ApplicationForm from './components/ApplicationForm';
-import ApplicationList from './components/ApplicationList';
-import DependencyMap from './components/DependencyMap';
-import CostMonitoring from './components/CostMonitoring';
-import EAMSDashboard from './components/EAMSDashboard';
+import EnhancedPasswordReset from './components/EnhancedPasswordReset';
+import RootDashboard from './components/RootDashboard';
 import CompanyDashboard from './components/CompanyDashboard';
+import UserManagement from './components/UserManagement';
+import EnhancedUserForm from './components/EnhancedUserForm';
+import EnhancedDashboard from './components/EnhancedDashboard';
+import ProjectDiscovery from './components/ProjectDiscovery';
+import EAMSProjectSelector from './components/EAMSProjectSelector';
+import EAMSProjectDashboard from './components/EAMSProjectDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import BackButton from './components/BackButton';
+import MainNavigation from './components/MainNavigation';
 
 const theme = createTheme({
   palette: {
@@ -28,43 +31,35 @@ const theme = createTheme({
   },
 });
 
-// Project-specific route wrapper
-const ProjectRoute = ({ children }) => {
-  const { projectId } = useParams();
-  return <ProjectProvider projectId={projectId}>{children}</ProjectProvider>;
-};
 
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/companies" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
-            <Route path="/projects" element={<ProtectedRoute><ProjectSelector /></ProtectedRoute>} />
-            <Route path="/projects/:projectId" element={
-              <ProtectedRoute>
-                <ProjectRoute>
-                  <Layout />
-                </ProjectRoute>
-              </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="applications" element={<ApplicationList />} />
-              <Route path="applications/new" element={<ApplicationForm />} />
-              <Route path="applications/:id" element={<ApplicationForm />} />
-              <Route path="dependencies" element={<DependencyMap />} />
-              <Route path="costs" element={<CostMonitoring />} />
-              <Route path="eams" element={<EAMSDashboard />} />
-            </Route>
-            <Route path="/" element={<Navigate to="/projects" replace />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
+      <ProjectProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Router>
+            <MainNavigation />
+            <Box sx={{ mt: 8 }}>
+              <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/password-reset" element={<PasswordReset />} />
+              <Route path="/enhanced-password-reset" element={<EnhancedPasswordReset />} />
+              <Route path="/dashboard" element={<ProtectedRoute><EnhancedDashboard /></ProtectedRoute>} />
+              <Route path="/legacy-dashboard" element={<ProtectedRoute><RootDashboard /></ProtectedRoute>} />
+              <Route path="/companies" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
+              <Route path="/companies/new" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
+              <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+              <Route path="/users/new" element={<ProtectedRoute><EnhancedUserForm /></ProtectedRoute>} />
+              <Route path="/users/:userId/edit" element={<ProtectedRoute><EnhancedUserForm /></ProtectedRoute>} />
+                      <Route path="/projects" element={<ProtectedRoute><ProjectDiscovery /></ProtectedRoute>} />
+                      <Route path="/projects/:projectId" element={<ProtectedRoute><EAMSProjectDashboard /></ProtectedRoute>} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Box>
+          </Router>
+        </ThemeProvider>
+      </ProjectProvider>
     </AuthProvider>
   );
 }

@@ -77,12 +77,6 @@ aws cloudformation deploy \
         CertificateArn=$CERTIFICATE_ARN \
     --capabilities CAPABILITY_NAMED_IAM \
     --region $AWS_REGION \
-    --tags \
-        Project=$TAG_PROJECT \
-        Environment=$TAG_ENVIRONMENT \
-        Owner=$TAG_OWNER \
-        CostCenter=$TAG_COST_CENTER \
-        Application=$TAG_APPLICATION
 
 echo "✅ CloudFormation stack deployed successfully"
 

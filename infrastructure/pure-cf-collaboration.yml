@@ -1,0 +1,306 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Pure CloudFormation Real-time Collaboration Infrastructure for EAMS'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'dev'
+    AllowedValues: ['dev', 'staging', 'prod']
+    Description: 'Environment name'
+  
+  ProjectName:
+    Type: String
+    Default: 'eams'
+    Description: 'Project name prefix for resources'
+  
+  ServiceName:
+    Type: String
+    Default: 'discovery'
+    Description: 'Service name for URL generation'
+
+Resources:
+  # WebSocket API
+  WebSocketAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${ProjectName}-${ServiceName}-websocket-${Environment}'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Description: WebSocket API for real-time collaboration
+
+  # WebSocket Stage
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      StageName: !Ref Environment
+      AutoDeploy: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # Connections Table for WebSocket Management
+  ConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-${ServiceName}-connections-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ConnectionId
+          AttributeType: S
+        - AttributeName: EntityKey
+          AttributeType: S
+        - AttributeName: UserId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ConnectionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EntityIndex
+          KeySchema:
+            - AttributeName: EntityKey
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: UserId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Service
+          Value: !Ref ServiceName
+
+  # IAM Role for WebSocket Handler
+  WebSocketHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WebSocketHandlerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt ConnectionsTable.Arn
+                  - !Sub '${ConnectionsTable.Arn}/index/*'
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketAPI}/*'
+
+  # Lambda Function for WebSocket Handler
+  WebSocketHandler:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${ServiceName}-websocket-handler-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt WebSocketHandlerRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE: !Ref ConnectionsTable
+          WEBSOCKET_API_ID: !Ref WebSocketAPI
+          WEBSOCKET_STAGE: !Ref Environment
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          const apigateway = new AWS.ApiGatewayManagementApi({
+            endpoint: process.env.WEBSOCKET_ENDPOINT || `https://${process.env.WEBSOCKET_API_ID}.execute-api.${process.env.AWS_REGION}.amazonaws.com/${process.env.WEBSOCKET_STAGE}`
+          });
+
+          exports.handler = async (event) => {
+            console.log('WebSocket event:', JSON.stringify(event, null, 2));
+            const { requestContext, body } = event;
+            const { routeKey, connectionId } = requestContext;
+
+            try {
+              switch (routeKey) {
+                case '$connect':
+                  return await handleConnect(event);
+                case '$disconnect':
+                  return await handleDisconnect(event);
+                case '$default':
+                  return await handleDefault(event);
+                default:
+                  return { statusCode: 400, body: 'Unknown route' };
+              }
+            } catch (error) {
+              console.error('Error handling WebSocket event:', error);
+              return { statusCode: 500, body: 'Internal server error' };
+            }
+          };
+
+          const handleConnect = async (event) => {
+            const { requestContext } = event;
+            const { connectionId } = requestContext;
+            const userId = event.queryStringParameters?.userId || 'anonymous';
+            const entityType = event.queryStringParameters?.entityType || 'unknown';
+            const entityId = event.queryStringParameters?.entityId || 'unknown';
+
+            try {
+              await storeConnection(connectionId, userId, entityType, entityId);
+              return { statusCode: 200, body: 'Connected' };
+            } catch (error) {
+              console.error('Error handling connect:', error);
+              return { statusCode: 500, body: 'Connection failed' };
+            }
+          };
+
+          const handleDisconnect = async (event) => {
+            const { requestContext } = event;
+            const { connectionId } = requestContext;
+
+            try {
+              await removeConnection(connectionId);
+              return { statusCode: 200, body: 'Disconnected' };
+            } catch (error) {
+              console.error('Error handling disconnect:', error);
+              return { statusCode: 500, body: 'Disconnect failed' };
+            }
+          };
+
+          const handleDefault = async (event) => {
+            const { requestContext, body } = event;
+            const { connectionId } = requestContext;
+
+            try {
+              const data = JSON.parse(body || '{}');
+              console.log('Received message:', data);
+              return { statusCode: 200, body: 'Message processed' };
+            } catch (error) {
+              console.error('Error handling default message:', error);
+              return { statusCode: 400, body: 'Invalid message format' };
+            }
+          };
+
+          const storeConnection = async (connectionId, userId, entityType, entityId) => {
+            const entityKey = `${entityType}#${entityId}`;
+            const ttl = Math.floor(Date.now() / 1000) + 3600;
+
+            await dynamodb.put({
+              TableName: process.env.CONNECTIONS_TABLE,
+              Item: {
+                ConnectionId: connectionId,
+                UserId: userId,
+                EntityKey: entityKey,
+                EntityType: entityType,
+                EntityId: entityId,
+                ConnectedAt: new Date().toISOString(),
+                TTL: ttl
+              }
+            }).promise();
+          };
+
+          const removeConnection = async (connectionId) => {
+            try {
+              await dynamodb.delete({
+                TableName: process.env.CONNECTIONS_TABLE,
+                Key: { ConnectionId: connectionId }
+              }).promise();
+            } catch (error) {
+              console.error('Error removing connection:', error);
+            }
+          };
+
+  # Lambda Permission for API Gateway
+  WebSocketHandlerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketHandler
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketAPI}/*'
+
+  # API Gateway Routes
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      RouteKey: $connect
+      Target: !Sub 'integrations/${ConnectIntegration}'
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      RouteKey: $disconnect
+      Target: !Sub 'integrations/${DisconnectIntegration}'
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      RouteKey: $default
+      Target: !Sub 'integrations/${DefaultIntegration}'
+
+  # API Gateway Integrations
+  ConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketHandler.Arn}/invocations'
+
+  DisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketHandler.Arn}/invocations'
+
+  DefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketAPI
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketHandler.Arn}/invocations'
+
+Outputs:
+  WebSocketAPIEndpoint:
+    Description: WebSocket API endpoint
+    Value: !Sub 'wss://${WebSocketAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketAPIEndpoint'
+
+  ConnectionsTableName:
+    Description: DynamoDB table for WebSocket connections
+    Value: !Ref ConnectionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-ConnectionsTableName'
+
+  WebSocketAPIId:
+    Description: WebSocket API ID
+    Value: !Ref WebSocketAPI
+    Export:
+      Name: !Sub '${AWS::StackName}-WebSocketAPIId'

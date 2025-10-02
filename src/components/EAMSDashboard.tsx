@@ -35,7 +35,7 @@ import {
   FilterList as FilterIcon
 } from '@mui/icons-material';
 import { FactSheet, Dependency } from '../types/eams';
-import InventoryView from './InventoryView';
+import EAMSInventoryView from './EAMSInventoryView';
 import DependencyMapEAMS from './DependencyMapEAMS';
 import ImpactAnalysis from './ImpactAnalysis';
 import ReportingDashboard from './ReportingDashboard';
@@ -465,14 +465,7 @@ const EAMSDashboard: React.FC<EAMSDashboardProps> = ({
         </Tabs>
 
         <TabPanel value={activeTab} index={0}>
-          <InventoryView
-            factSheets={factSheets}
-            onFactSheetSelect={handleFactSheetSelect}
-            onEdit={handleFactSheetEdit}
-            onDelete={handleFactSheetDelete}
-            showFilters={true}
-            showActions={true}
-          />
+          <EAMSInventoryView />
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
