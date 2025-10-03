@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getUsers, getUsersByCompany } from '../services/localDataService';
+import awsDataService from '../services/awsDataService';
+import { useAuth } from '../contexts/AuthContext';
 import SimpleUserForm from './SimpleUserForm';
+import DynamicUserForm from './DynamicUserForm';
 import {
   Box,
   Typography,
@@ -56,7 +58,6 @@ import UserForm from './UserForm';
 import EnhancedUserForm from './EnhancedUserForm';
 import BackButton from './BackButton';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -70,6 +71,8 @@ const UserManagement = () => {
   const [userFormOpen, setUserFormOpen] = useState(false);
   const [enhancedUserFormOpen, setEnhancedUserFormOpen] = useState(false);
   const [simpleFormOpen, setSimpleFormOpen] = useState(false);
+  const [dynamicFormOpen, setDynamicFormOpen] = useState(false);
+  const [useDynamicForm, setUseDynamicForm] = useState(true); // Default to dynamic form
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -94,12 +97,21 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Load real data from localStorage
-      const usersData = getUsers();
-      setUsers(usersData);
+      // Load real data from AWS DynamoDB
+      const result = await awsDataService.getUsers(currentUser);
+      if (result.success) {
+        setUsers(result.users);
+        console.log('Loaded users from AWS:', result.users);
+      } else {
+        console.error('Error loading users:', result.error);
+        showNotification('Error loading users: ' + result.error, 'error');
+        // Fallback to empty array
+        setUsers([]);
+      }
     } catch (error) {
       console.error('Error loading users:', error);
       showNotification('Error loading users: ' + error.message, 'error');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -107,12 +119,13 @@ const UserManagement = () => {
 
   const loadUserForEdit = async (userId) => {
     try {
-      const result = await enhancedUserAPI.getUserById(userId);
-      if (result.success) {
-        setSelectedUser(result.user);
+      // Find user in the current users list
+      const user = users.find(u => u.UserID === userId || u.id === userId);
+      if (user) {
+        setSelectedUser(user);
         setEnhancedUserFormOpen(true);
       } else {
-        showNotification('Error loading user: ' + result.error, 'error');
+        showNotification('User not found', 'error');
         navigate('/users');
       }
     } catch (error) {
@@ -297,13 +310,30 @@ const UserManagement = () => {
           </Typography>
         </Box>
         {canManageUsers(currentUser) && (
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setSimpleFormOpen(true)}
-          >
-            Create User
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useDynamicForm}
+                  onChange={(e) => setUseDynamicForm(e.target.checked)}
+                />
+              }
+              label="Advanced Permissions"
+            />
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                if (useDynamicForm) {
+                  setDynamicFormOpen(true);
+                } else {
+                  setSimpleFormOpen(true);
+                }
+              }}
+            >
+              Create User
+            </Button>
+          </Box>
         )}
       </Box>
 
@@ -451,18 +481,17 @@ const UserManagement = () => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip
-                      icon={getRoleIcon(user.userType)}
-                      label={getUserTypeInfo(user.userType).name}
-                      color={getRoleColor(user.userType)}
+                      label={user.UserLevel || user.userType || 'standard'}
+                      color={user.UserLevel === 'admin' ? 'error' : user.UserLevel === 'super_user' ? 'warning' : 'default'}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    {user.userType === USER_TYPES.ADMIN || user.userType === USER_TYPES.INTERNAL ? (
+                    {user.CanAccessAllProjects || user.UserLevel === 'admin' ? (
                       <Chip label="All Projects" color="success" size="small" />
                     ) : (
                       <Typography variant="body2">
-                        {user.assignedProjects?.length || 0} assigned
+                        {user.AssignedProjects?.length || user.assignedProjects?.length || 0} assigned
                       </Typography>
                     )}
                   </TableCell>
@@ -560,6 +589,16 @@ const UserManagement = () => {
       <SimpleUserForm
         open={simpleFormOpen}
         onClose={() => setSimpleFormOpen(false)}
+        onSuccess={(newUser) => {
+          console.log('User created successfully:', newUser);
+          loadUsers(); // Refresh the list
+        }}
+      />
+
+      {/* Dynamic User Form */}
+      <DynamicUserForm
+        open={dynamicFormOpen}
+        onClose={() => setDynamicFormOpen(false)}
         onSuccess={(newUser) => {
           console.log('User created successfully:', newUser);
           loadUsers(); // Refresh the list

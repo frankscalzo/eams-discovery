@@ -1,5 +1,4 @@
-/* Import KendoReact Default Theme */
-@import '@progress/kendo-theme-default/dist/all.css';
+/* Kendo UI removed - using Material-UI only */
 
 /* Custom EAMS Theme Overrides */
 :root {
@@ -41,15 +40,7 @@ code {
   height: 100vh;
 }
 
-/* KendoReact Theme Customizations */
-.k-theme-default {
-  --kendo-color-primary: var(--eams-primary);
-  --kendo-color-secondary: var(--eams-secondary);
-  --kendo-color-success: var(--eams-success);
-  --kendo-color-warning: var(--eams-warning);
-  --kendo-color-error: var(--eams-error);
-  --kendo-color-info: var(--eams-info);
-}
+/* Material-UI Theme Customizations */
 
 /* EAMS Custom Components */
 .eams-container {

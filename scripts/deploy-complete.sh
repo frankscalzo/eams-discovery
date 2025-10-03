@@ -162,3 +162,7 @@ echo "2. Run 'npm run build' to build with AWS configuration"
 echo "3. Deploy the built files to S3"
 echo "4. Test the application with admin@eams.com / AdminPass123!"
 
+
+
+
+

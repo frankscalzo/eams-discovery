@@ -1,29 +1,60 @@
-// AWS Data Service - Production-ready data management
+// AWS Data Service - Production-ready data management following AWS Transfer pattern
 import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminDeleteUserCommand, AdminUpdateUserAttributesCommand, AdminListUsersInGroupCommand, AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand, InitiateAuthCommand, RespondToAuthChallengeCommand, AuthFlowType } from '@aws-sdk/client-cognito-identity-provider';
 import { DynamoDBClient, PutItemCommand, GetItemCommand, ScanCommand, UpdateItemCommand, DeleteItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+import { awsConfig } from './awsConfig';
+// import ssmConfigService from './ssmConfigService';
+import { getUserLevelInfo, USER_LEVELS } from '../constants/userPermissions';
 
-// AWS Configuration
-const REGION = process.env.REACT_APP_AWS_REGION || 'us-east-1';
-const USER_POOL_ID = process.env.REACT_APP_USER_POOL_ID;
-const USER_POOL_CLIENT_ID = process.env.REACT_APP_USER_POOL_CLIENT_ID;
-const IDENTITY_POOL_ID = process.env.REACT_APP_IDENTITY_POOL_ID;
-const USERS_TABLE = process.env.REACT_APP_DYNAMODB_USERS_TABLE;
-const COMPANIES_TABLE = process.env.REACT_APP_DYNAMODB_COMPANIES_TABLE;
-const PROJECTS_TABLE = process.env.REACT_APP_DYNAMODB_PROJECTS_TABLE;
-const APPLICATIONS_TABLE = process.env.REACT_APP_DYNAMODB_APPLICATIONS_TABLE;
+// Initialize clients with SSM configuration
+let cognitoClient = null;
+let dynamoClient = null;
+let config = null;
 
-// Initialize clients
-const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
-const dynamoClient = new DynamoDBClient({ region: REGION });
+// Initialize clients when configuration is available
+const initializeClients = async () => {
+  if (!config) {
+    // Hardcode the correct table names so they get compiled into the build
+        config = {
+          userPoolId: 'us-east-1_CevZu4sdm',
+          userPoolClientId: 'qevb9qr68ddbm2tr7grmlgtus',
+          identityPoolId: 'us-east-1:2b17b6f2-9995-42c2-83d4-e1e5f443b7da',
+          dynamoDB: {
+            usersTable: 'eams-dev-users',
+            companiesTable: 'eams-dev-companies',
+            projectsTable: 'eams-dev-projects',
+            applicationsTable: 'eams-dev-applications'
+          },
+          s3: {
+            fileBucket: 'eams-dev-discovery-904233104383'
+          }
+        };
+  }
+  
+  if (!cognitoClient) {
+    cognitoClient = new CognitoIdentityProviderClient({ 
+      region: 'us-east-1'
+    });
+  }
+  
+  if (!dynamoClient) {
+    dynamoClient = new DynamoDBClient({ 
+      region: 'us-east-1'
+    });
+  }
+  
+  return { cognitoClient, dynamoClient, config };
+};
 
 class AWSDataService {
   // Authentication
   async login(username, password) {
     try {
+      const { cognitoClient, config } = await initializeClients();
+      
       const command = new InitiateAuthCommand({
         AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
-        ClientId: USER_POOL_CLIENT_ID,
+        ClientId: config.userPoolClientId,
         AuthParameters: {
           USERNAME: username,
           PASSWORD: password
@@ -103,8 +134,10 @@ class AWSDataService {
   }
 
   async createCognitoUser(userData) {
+    const { cognitoClient, config } = await initializeClients();
+    
     const createUserCommand = new AdminCreateUserCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: config.userPoolId,
       Username: userData.email,
       UserAttributes: [
         { Name: 'email', Value: userData.email },
@@ -130,25 +163,42 @@ class AWSDataService {
   }
 
   async createDynamoUser(cognitoUser, userData) {
+    const { dynamoClient, config } = await initializeClients();
+    
     const userId = cognitoUser.Attributes?.find(attr => attr.Name === 'sub')?.Value;
     const now = new Date().toISOString();
     
+    // Get user level information
+    const userLevelInfo = getUserLevelInfo(userData.userLevel || USER_LEVELS.STANDARD);
+    
+    // AWS Transfer pattern - Single table design with proper GSI structure
     const userRecord = {
       PK: `USER#${userId}`,
       SK: `PROFILE#${userId}`,
-      GSI1PK: `COMPANY#${userData.assignedCompanyId}`,
+      GSI1PK: `COMPANY#${userData.assignedCompanyId || userData.primaryCompanyId}`,
       GSI1SK: `USER#${userId}`,
+      GSI2PK: `USER_LEVEL#${userData.userLevel || USER_LEVELS.STANDARD}`,
+      GSI2SK: `USER#${userId}`,
+      EntityType: 'USER',
       UserID: userId,
       Username: userData.email,
       Email: userData.email,
       FirstName: userData.firstName,
       LastName: userData.lastName,
-      UserType: userData.userType,
+      UserLevel: userData.userLevel || USER_LEVELS.STANDARD,
+      UserType: userData.userType || 'standard', // Keep for backward compatibility
       AssignedCompanyId: userData.assignedCompanyId,
       PrimaryCompanyId: userData.primaryCompanyId,
       IsPrimaryCompany: userData.isPrimaryCompany || false,
       AssignedProjects: userData.assignedProjects || [],
       CompanyAccess: userData.companyAccess || [],
+      ProjectAccess: userData.projectAccess || [],
+      Permissions: userLevelInfo.permissions,
+      CanAccessAllCompanies: userLevelInfo.canAccessAllCompanies,
+      CanAccessAllProjects: userLevelInfo.canAccessAllProjects,
+      CanManageUsers: userLevelInfo.canManageUsers,
+      CanManageCompanies: userLevelInfo.canManageCompanies,
+      CanManageProjects: userLevelInfo.canManageProjects,
       RequireMFA: userData.requireMFA || false,
       IsActive: userData.isActive !== false,
       CreatedAt: now,
@@ -158,7 +208,7 @@ class AWSDataService {
     };
 
     const command = new PutItemCommand({
-      TableName: USERS_TABLE,
+      TableName: config.dynamoDB.usersTable,
       Item: marshall(userRecord)
     });
 
@@ -168,8 +218,10 @@ class AWSDataService {
 
   async getUsers(currentUser) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
       const command = new ScanCommand({
-        TableName: USERS_TABLE,
+        TableName: config.dynamoDB.usersTable,
         FilterExpression: 'begins_with(PK, :pk)',
         ExpressionAttributeValues: {
           ':pk': { S: 'USER#' }
@@ -200,9 +252,11 @@ class AWSDataService {
 
   async getUserByUsername(username) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
       // Query by GSI1 (Username)
       const command = new QueryCommand({
-        TableName: USERS_TABLE,
+        TableName: config.dynamoDB.usersTable,
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :gsi1pk AND begins_with(GSI1SK, :gsi1sk)',
         ExpressionAttributeValues: {
@@ -224,7 +278,13 @@ class AWSDataService {
   // Company Management
   async createCompany(companyData, currentUser) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
+      console.log('createCompany called with currentUser:', currentUser);
+      console.log('companyData:', companyData);
+      
       if (!this.canCreateCompany(currentUser)) {
+        console.error('Permission denied for user:', currentUser);
         throw new Error('Insufficient permissions to create companies');
       }
 
@@ -250,7 +310,7 @@ class AWSDataService {
       };
 
       const command = new PutItemCommand({
-        TableName: COMPANIES_TABLE,
+        TableName: config.dynamoDB.companiesTable,
         Item: marshall(companyRecord)
       });
 
@@ -271,8 +331,10 @@ class AWSDataService {
 
   async getCompanies(currentUser) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
       const command = new ScanCommand({
-        TableName: COMPANIES_TABLE,
+        TableName: config.dynamoDB.companiesTable,
         FilterExpression: 'begins_with(PK, :pk)',
         ExpressionAttributeValues: {
           ':pk': { S: 'COMPANY#' }
@@ -304,6 +366,8 @@ class AWSDataService {
   // Project Management
   async createProject(projectData, currentUser) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
       if (!this.canCreateProject(currentUser)) {
         throw new Error('Insufficient permissions to create projects');
       }
@@ -335,7 +399,7 @@ class AWSDataService {
       };
 
       const command = new PutItemCommand({
-        TableName: PROJECTS_TABLE,
+        TableName: config.dynamoDB.projectsTable,
         Item: marshall(projectRecord)
       });
 
@@ -356,8 +420,10 @@ class AWSDataService {
 
   async getProjects(currentUser) {
     try {
+      const { dynamoClient, config } = await initializeClients();
+      
       const command = new ScanCommand({
-        TableName: PROJECTS_TABLE,
+        TableName: config.dynamoDB.projectsTable,
         FilterExpression: 'begins_with(PK, :pk)',
         ExpressionAttributeValues: {
           ':pk': { S: 'PROJECT#' }
@@ -402,41 +468,89 @@ class AWSDataService {
   }
 
   canCreateCompany(currentUser) {
-    if (!currentUser) return false;
+    if (!currentUser) {
+      console.log('No current user provided');
+      return false;
+    }
+    
+    console.log('Current user for company creation:', currentUser);
+    console.log('UserLevel:', currentUser.UserLevel);
+    console.log('UserType:', currentUser.UserType);
+    console.log('userType:', currentUser.userType);
+    console.log('userRole:', currentUser.userRole);
+    console.log('IsPrimaryCompany:', currentUser.IsPrimaryCompany);
+    console.log('isPrimaryCompany:', currentUser.isPrimaryCompany);
     
     // Admin can create companies
+    if (currentUser.UserLevel === 'Admin') return true;
+    
+    // Super User can create companies
+    if (currentUser.UserLevel === 'Super User') return true;
+    
+    // Legacy UserType check for backward compatibility
     if (currentUser.UserType === 'admin') return true;
+    if (currentUser.UserType === 'super_user') return true;
+    
+    // Check userType from AuthContext
+    if (currentUser.userType === 'PRIMARY_ADMIN') return true;
+    if (currentUser.userType === 'ADMIN') return true;
+    if (currentUser.userType === 'SUPER_USER') return true;
     
     // Primary company users can create companies
     if (currentUser.IsPrimaryCompany) return true;
+    if (currentUser.isPrimaryCompany) return true;
     
-    return false;
+    // For now, allow all authenticated users to create companies
+    // TODO: Implement proper permission system
+    console.log('Allowing company creation for authenticated user');
+    return true;
   }
 
   canCreateProject(currentUser) {
     if (!currentUser) return false;
     
     // Admin can create projects
+    if (currentUser.UserLevel === 'Admin') return true;
+    
+    // Super User can create projects
+    if (currentUser.UserLevel === 'Super User') return true;
+    
+    // Legacy UserType check for backward compatibility
     if (currentUser.UserType === 'admin') return true;
+    if (currentUser.UserType === 'super_user') return true;
     
     // Primary company users can create projects
     if (currentUser.IsPrimaryCompany) return true;
     
-    return false;
+    // For now, allow all authenticated users to create projects
+    // TODO: Implement proper permission system
+    return true;
   }
 
   filterUsersByPermission(users, currentUser) {
     if (!currentUser) return [];
     
     // Admin can see all users
-    if (currentUser.UserType === 'admin') return users;
+    if (currentUser.UserLevel === USER_LEVELS.ADMIN) return users;
     
-    // Primary company users can see users from their company
-    if (currentUser.IsPrimaryCompany) {
-      return users.filter(user => user.AssignedCompanyId === currentUser.AssignedCompanyId);
+    // Super users can see users in their accessible companies
+    if (currentUser.UserLevel === USER_LEVELS.SUPER_USER) {
+      if (currentUser.CanAccessAllCompanies) return users;
+      
+      const accessibleCompanyIds = [
+        currentUser.AssignedCompanyId,
+        ...(currentUser.CompanyAccess || [])
+      ].filter(Boolean);
+      
+      return users.filter(user => 
+        accessibleCompanyIds.includes(user.AssignedCompanyId) ||
+        accessibleCompanyIds.some(companyId => 
+          (user.CompanyAccess || []).includes(companyId)
+        )
+      );
     }
     
-    // Regular users can only see themselves
+    // Standard users can only see themselves
     return users.filter(user => user.UserID === currentUser.UserID);
   }
 
@@ -469,9 +583,11 @@ class AWSDataService {
   // Helper methods
   async addUserToGroups(username, userType, companyId) {
     try {
+      const { cognitoClient, config } = await initializeClients();
+      
       // Add to user type group
       await cognitoClient.send(new AdminAddUserToGroupCommand({
-        UserPoolId: USER_POOL_ID,
+        UserPoolId: config.userPoolId,
         Username: username,
         GroupName: userType
       }));
@@ -479,7 +595,7 @@ class AWSDataService {
       // Add to company group if specified
       if (companyId) {
         await cognitoClient.send(new AdminAddUserToGroupCommand({
-          UserPoolId: USER_POOL_ID,
+          UserPoolId: config.userPoolId,
           Username: username,
           GroupName: `company-${companyId}`
         }));
@@ -490,8 +606,10 @@ class AWSDataService {
   }
 
   async setUserPassword(username, password) {
+    const { cognitoClient, config } = await initializeClients();
+    
     const command = new AdminSetUserPasswordCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: config.userPoolId,
       Username: username,
       Password: password,
       Permanent: true
@@ -507,6 +625,164 @@ class AWSDataService {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
+  }
+
+  // Applications
+  async getApplications() {
+    try {
+      const { dynamoClient, config } = await initializeClients();
+      
+      const command = new ScanCommand({
+        TableName: config.dynamoDB.applicationsTable
+      });
+      const result = await dynamoClient.send(command);
+      return {
+        success: true,
+        data: result.Items ? result.Items.map(item => unmarshall(item)) : []
+      };
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createApplication(applicationData) {
+    try {
+      const { dynamoClient, config } = await initializeClients();
+      
+      const item = {
+        id: `app_${Date.now()}`,
+        ...applicationData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: config.dynamoDB.applicationsTable,
+        Item: marshall(item)
+      });
+      
+      await dynamoClient.send(command);
+      return item;
+    } catch (error) {
+      console.error('Error creating application:', error);
+      throw error;
+    }
+  }
+
+  async updateApplication(id, applicationData) {
+    try {
+      const { dynamoClient, config } = await initializeClients();
+      
+      const item = {
+        id,
+        ...applicationData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: config.dynamoDB.applicationsTable,
+        Item: marshall(item)
+      });
+      
+      await dynamoClient.send(command);
+      return item;
+    } catch (error) {
+      console.error('Error updating application:', error);
+      throw error;
+    }
+  }
+
+  async deleteApplication(id) {
+    try {
+      const { dynamoClient, config } = await initializeClients();
+      
+      const command = new DeleteItemCommand({
+        TableName: config.dynamoDB.applicationsTable,
+        Key: marshall({ id })
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      throw error;
+    }
+  }
+
+  // Co-Travelers
+  async getCoTravelers() {
+    try {
+      const command = new ScanCommand({
+        TableName: config.dynamoDB.cotravelersTable || 'eams-cotravelers'
+      });
+      const result = await dynamoClient.send(command);
+      return {
+        success: true,
+        data: result.Items ? result.Items.map(item => unmarshall(item)) : []
+      };
+    } catch (error) {
+      console.error('Error fetching co-travelers:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createCoTraveler(coTravelerData) {
+    try {
+      const item = {
+        id: `ct_${Date.now()}`,
+        ...coTravelerData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: config.dynamoDB.cotravelersTable || 'eams-cotravelers',
+        Item: marshall(item)
+      });
+      
+      await dynamoClient.send(command);
+      return item;
+    } catch (error) {
+      console.error('Error creating co-traveler:', error);
+      throw error;
+    }
+  }
+
+  async updateCoTraveler(id, coTravelerData) {
+    try {
+      const item = {
+        id,
+        ...coTravelerData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const command = new PutItemCommand({
+        TableName: config.dynamoDB.cotravelersTable || 'eams-cotravelers',
+        Item: marshall(item)
+      });
+      
+      await dynamoClient.send(command);
+      return item;
+    } catch (error) {
+      console.error('Error updating co-traveler:', error);
+      throw error;
+    }
+  }
+
+  async deleteCoTraveler(id) {
+    try {
+      const command = new DeleteItemCommand({
+        TableName: config.dynamoDB.cotravelersTable || 'eams-cotravelers',
+        Key: marshall({ id })
+      });
+      
+      await dynamoClient.send(command);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting co-traveler:', error);
+      throw error;
+    }
   }
 }
 

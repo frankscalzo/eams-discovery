@@ -1,10 +1,21 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { dynamoConfig } from './awsConfig';
+import { getDynamoConfig } from './awsConfig';
 
-// Initialize AWS clients with proper credentials
-const dynamoClient = new DynamoDBClient(dynamoConfig);
-const docClient = DynamoDBDocumentClient.from(dynamoClient);
+// Initialize AWS clients with SSM configuration
+let dynamoClient = null;
+let docClient = null;
+
+const initializeClient = async () => {
+  if (!dynamoClient) {
+    const config = getDynamoConfig();
+    if (config) {
+      dynamoClient = new DynamoDBClient(config);
+      docClient = DynamoDBDocumentClient.from(dynamoClient);
+    }
+  }
+  return { dynamoClient, docClient };
+};
 
 const TABLE_NAME = process.env.REACT_APP_DYNAMODB_TABLE || 'eams-dev-projects';
 

@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EAMS Backend-for-Frontend (BFF) with Cognito OAuth2 + API Gateway'
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  
+  UsersTable:
+    Type: String
+    Default: eams-dev-users
+  
+  CompaniesTable:
+    Type: String
+    Default: eams-dev-companies
+  
+  ProjectsTable:
+    Type: String
+    Default: eams-dev-projects
+
+  CognitoUserPoolId:
+    Type: String
+    Default: us-east-1_CevZu4sdm
+  
+  CognitoClientId:
+    Type: String
+    Default: qevb9qr68ddbm2tr7grmlgtus
+  
+  FrontendUrl:
+    Type: String
+    Default: https://d1b2c3d4e5f6g7.cloudfront.net
+
+Resources:
+  # Lambda Execution Role
+  EamsBffRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UsersTable}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CompaniesTable}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}'
+
+  # Auth Lambda Function
+  EamsAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'eams-${Stage}-auth'
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt EamsBffRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - will be updated with actual code
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Hello from EAMS Auth' };
+          };
+      Environment:
+        Variables:
+          COGNITO_DOMAIN: !Sub '${CognitoUserPoolId}.auth.${AWS::Region}.amazoncognito.com'
+          CLIENT_ID: !Ref CognitoClientId
+          REDIRECT_URI: !Sub 'https://${EamsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/auth/callback'
+          FRONTEND_URL: !Ref FrontendUrl
+      Timeout: 30
+      MemorySize: 256
+
+  # API Lambda Function
+  EamsApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'eams-${Stage}-api'
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt EamsBffRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - will be updated with actual code
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Hello from EAMS API' };
+          };
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          COMPANIES_TABLE: !Ref CompaniesTable
+          PROJECTS_TABLE: !Ref ProjectsTable
+      Timeout: 30
+      MemorySize: 256
+
+  # API Gateway
+  EamsApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'eams-${Stage}-bff'
+      Description: 'EAMS Backend-for-Frontend API Gateway'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Resources
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: auth
+
+  AuthLoginResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: login
+
+  AuthCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: callback
+
+  AuthMeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: me
+
+  AuthLogoutResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: logout
+
+  UsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: users
+
+  CompaniesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: companies
+
+  ProjectsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: projects
+
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: health
+
+  # Auth API Gateway Methods
+  GetAuthLoginMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthLoginResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  GetAuthCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  GetAuthMeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthMeResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  PostAuthLogoutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthLogoutResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  # API Gateway Methods
+  GetUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref UsersResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  PostUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref UsersResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetCompaniesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref CompaniesResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  PostCompaniesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref CompaniesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetProjectsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref ProjectsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  # Lambda Permissions for API Gateway
+  AuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EamsAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${EamsApiGateway}/*/*'
+
+  ApiLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EamsApiFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${EamsApiGateway}/*/*'
+
+  # API Gateway Deployment
+  EamsApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetAuthLoginMethod
+      - GetAuthCallbackMethod
+      - GetAuthMeMethod
+      - PostAuthLogoutMethod
+      - GetUsersMethod
+      - PostUsersMethod
+      - GetCompaniesMethod
+      - PostCompaniesMethod
+      - GetProjectsMethod
+      - GetHealthMethod
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      StageName: !Ref Stage
+
+Outputs:
+  ApiUrl:
+    Description: 'API Gateway URL'
+    Value: !Sub 'https://${EamsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+  
+  AuthFunctionArn:
+    Description: 'Auth Lambda Function ARN'
+    Value: !GetAtt EamsAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-AuthArn'
+  
+  ApiFunctionArn:
+    Description: 'API Lambda Function ARN'
+    Value: !GetAtt EamsApiFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiArn'

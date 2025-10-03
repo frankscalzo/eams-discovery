@@ -1,0 +1,10 @@
+{
+  "name": "eams-api",
+  "version": "1.0.0",
+  "description": "EAMS API Lambda function",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/util-dynamodb": "^3.0.0"
+  }
+}

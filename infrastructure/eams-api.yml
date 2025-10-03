@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EAMS API Gateway and Lambda functions'
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+  
+  UsersTable:
+    Type: String
+    Default: eams-dev-users
+  
+  CompaniesTable:
+    Type: String
+    Default: eams-dev-companies
+  
+  ProjectsTable:
+    Type: String
+    Default: eams-dev-projects
+
+Resources:
+  # Lambda Execution Role
+  EamsApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UsersTable}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CompaniesTable}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}'
+
+  # Lambda Function
+  EamsApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'eams-${Stage}-api'
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt EamsApiRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - will be updated with actual code
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Hello from EAMS API' };
+          };
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          COMPANIES_TABLE: !Ref CompaniesTable
+          PROJECTS_TABLE: !Ref ProjectsTable
+      Timeout: 30
+      MemorySize: 256
+
+  # API Gateway
+  EamsApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'eams-${Stage}-api'
+      Description: 'EAMS API Gateway'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Resources
+  UsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: users
+
+  CompaniesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: companies
+
+  ProjectsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: projects
+
+  # API Gateway Methods
+  GetUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref UsersResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  PostUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref UsersResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetCompaniesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref CompaniesResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  PostCompaniesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref CompaniesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetProjectsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref ProjectsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  # Lambda Permission for API Gateway
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EamsApiFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${EamsApiGateway}/*/*'
+
+  # API Gateway Deployment
+  EamsApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetUsersMethod
+      - PostUsersMethod
+      - GetCompaniesMethod
+      - PostCompaniesMethod
+      - GetProjectsMethod
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      StageName: !Ref Stage
+
+Outputs:
+  ApiUrl:
+    Description: 'API Gateway URL'
+    Value: !Sub 'https://${EamsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+  
+  LambdaFunctionArn:
+    Description: 'Lambda Function ARN'
+    Value: !GetAtt EamsApiFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaArn'

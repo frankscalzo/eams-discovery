@@ -1,9 +1,21 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { dynamoConfig } from './awsConfig';
+import { getDynamoConfig } from './awsConfig';
 
-const client = new DynamoDBClient(dynamoConfig);
-const docClient = DynamoDBDocumentClient.from(client);
+// Initialize DynamoDB client with SSM configuration
+let client = null;
+let docClient = null;
+
+const initializeClient = async () => {
+  if (!client) {
+    const config = getDynamoConfig();
+    if (config) {
+      client = new DynamoDBClient(config);
+      docClient = DynamoDBDocumentClient.from(client);
+    }
+  }
+  return { client, docClient };
+};
 
 // Table names
 const PROJECTS_TABLE = 'EAMS-Projects';
@@ -447,4 +459,7 @@ export class ProjectDiscoveryAPI {
 }
 
 export default ProjectDiscoveryAPI;
+
+
+
 

@@ -15,10 +15,6 @@ import {
   Link
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
-import { Button as KendoButton } from '@progress/kendo-react-buttons';
-import { TextBox } from '@progress/kendo-react-inputs';
-import { Card as KendoCard } from '@progress/kendo-react-layout';
-import { Notification } from '@progress/kendo-react-notification';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -44,90 +40,107 @@ const Login = () => {
   };
 
   return (
-    <div className="eams-header">
-      <div className="eams-container">
-        <div className="eams-title">EAMS</div>
-        <div className="eams-subtitle">Enterprise Architecture Management System</div>
-      </div>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: 2
+      }}
+    >
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom color="white" fontWeight="bold">
+          EAMS
+        </Typography>
+        <Typography variant="h6" color="white" sx={{ opacity: 0.9 }}>
+          Enterprise Architecture Management System
+        </Typography>
+      </Box>
       
-      <Container component="main" maxWidth="sm">
-        <Box
-          sx={{
-            marginTop: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <KendoCard className="eams-card fade-in">
-            <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h5" component="h2" gutterBottom color="primary">
-                Welcome Back
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Sign in to access your EAMS dashboard
-              </Typography>
-            </Box>
+      <Card sx={{ maxWidth: 400, width: '100%', boxShadow: 3 }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Typography variant="h5" component="h2" gutterBottom color="primary">
+              Welcome Back
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Sign in to access your EAMS dashboard
+            </Typography>
+          </Box>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-              <Box sx={{ mb: 2 }}>
-                <TextBox
-                  label="Username or Email"
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  style={{ width: '100%' }}
-                  placeholder="Enter your username or email"
-                />
-              </Box>
-              
-              <Box sx={{ mb: 3 }}>
-                <TextBox
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  style={{ width: '100%' }}
-                  placeholder="Enter your password"
-                />
-              </Box>
-              
-              <KendoButton
-                type="submit"
-                themeColor="primary"
-                size="large"
-                style={{ width: '100%', height: '48px' }}
-                disabled={loading}
-              >
-                {loading ? <CircularProgress size={24} /> : 'Sign In'}
-              </KendoButton>
-            </Box>
+          <Box component="form" onSubmit={handleSubmit}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Username or Email"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              sx={{ mb: 3 }}
+            />
+            
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{ 
+                mt: 2, 
+                mb: 2, 
+                height: 48,
+                fontSize: '1.1rem'
+              }}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Sign In'}
+            </Button>
+          </Box>
 
-            <Box sx={{ mt: 3, textAlign: 'center' }}>
-              <Link
-                component="button"
-                variant="body2"
-                onClick={() => navigate('/password-reset')}
-                sx={{ mb: 2, display: 'block', color: 'primary.main' }}
-              >
-                Forgot your password?
-              </Link>
-              <Typography variant="body2" color="text.secondary">
-                Your Credentials: fscalzo or fscalzo@optimumhit.com / Babymakes7!
-              </Typography>
-            </Box>
-          </KendoCard>
-        </Box>
-      </Container>
-    </div>
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate('/password-reset')}
+              sx={{ mb: 2, display: 'block', color: 'primary.main' }}
+            >
+              Forgot your password?
+            </Link>
+            <Typography variant="body2" color="text.secondary">
+              Test Credentials:<br/>
+              admin@optimumcloudservices.com / AdminPass123!<br/>
+              fscalzo / Babymakes7!
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 

@@ -28,15 +28,16 @@ import {
   QuestionAnswer as QuestionAnswerIcon,
   Explore as ExploreIcon,
   Settings as SettingsIcon,
+  CloudUpload as CloudUploadIcon,
   Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 
 const MainNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout } = useBffAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -48,6 +49,9 @@ const MainNavigation = () => {
     { label: 'Projects', path: '/projects', icon: <AssessmentIcon /> },
     { label: 'Companies', path: '/companies', icon: <BusinessIcon /> },
     { label: 'Users', path: '/users', icon: <PeopleIcon /> },
+    { label: 'Third Party Apps', path: '/third-party-apps', icon: <BuildIcon /> },
+    { label: 'Co-Travelers', path: '/co-travelers', icon: <PeopleIcon /> },
+    { label: 'Data Importer', path: '/data-importer', icon: <CloudUploadIcon /> },
     { label: 'Settings', path: '/settings', icon: <SettingsIcon /> }
   ];
 
@@ -106,6 +110,20 @@ const MainNavigation = () => {
       </List>
     </Box>
   );
+
+  // Don't render navigation if user is not authenticated or on auth pages
+  const isAuthPage = location.pathname === '/login' || 
+                    location.pathname === '/password-reset' || 
+                    location.pathname === '/enhanced-password-reset' ||
+                    location.pathname.startsWith('/login') ||
+                    location.pathname.startsWith('/password-reset') ||
+                    location.pathname.startsWith('/enhanced-password-reset');
+  
+  // Navigation logic working correctly
+  
+  if (!user || isAuthPage) {
+    return null;
+  }
 
   return (
     <>

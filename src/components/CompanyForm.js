@@ -162,10 +162,90 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
   const [fileType, setFileType] = useState('Other');
 
   useEffect(() => {
+    console.log('CompanyForm useEffect triggered:', { company, mode });
     if (company && mode === 'edit') {
+      console.log('Setting form data for edit mode with company:', company);
       setFormData({
         ...company,
+        Address: company.Address || {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'United States'
+        },
+        ProjectManager: company.ProjectManager || {
+          name: '',
+          email: '',
+          phone: ''
+        },
+        ExecutiveSponsor: company.ExecutiveSponsor || {
+          name: '',
+          email: '',
+          phone: ''
+        },
+        IntegrationSettings: company.IntegrationSettings || {
+          teams: {
+            enabled: false,
+            webhookUrl: '',
+            channelName: ''
+          },
+          confluence: {
+            enabled: false,
+            url: '',
+            username: '',
+            apiToken: '',
+            spaceKey: ''
+          }
+        },
+        CompanyDistribution: company.CompanyDistribution || {
+          type: 'internal',
+          distributionList: []
+        },
         CompanyFiles: company.CompanyFiles || []
+      });
+    } else if (mode === 'create') {
+      console.log('Setting form data for create mode');
+      setFormData({
+        CompanyName: '',
+        Address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'United States'
+        },
+        ProjectManager: {
+          name: '',
+          email: '',
+          phone: ''
+        },
+        ExecutiveSponsor: {
+          name: '',
+          email: '',
+          phone: ''
+        },
+        IntegrationSettings: {
+          teams: {
+            enabled: false,
+            webhookUrl: '',
+            channelName: ''
+          },
+          confluence: {
+            enabled: false,
+            url: '',
+            username: '',
+            apiToken: '',
+            spaceKey: ''
+          }
+        },
+        ProjectLocation: 'AWS',
+        CompanyDistribution: {
+          type: 'internal',
+          distributionList: []
+        },
+        ServiceNowProjectCode: '',
+        CompanyFiles: []
       });
     }
   }, [company, mode]);
@@ -307,7 +387,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
   };
 
   const addDistributionEmail = () => {
-    if (newDistributionEmail && !formData.CompanyDistribution.distributionList.includes(newDistributionEmail)) {
+    if (newDistributionEmail && !formData.CompanyDistribution?.distributionList?.includes(newDistributionEmail)) {
       setFormData(prev => ({
         ...prev,
         CompanyDistribution: {
@@ -327,6 +407,18 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         distributionList: prev.CompanyDistribution.distributionList.filter(e => e !== email)
       }
     }));
+  };
+
+  // Ensure Address is always defined
+  const safeFormData = {
+    ...formData,
+    Address: formData?.Address || {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'United States'
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -364,7 +456,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="Street Address"
-          value={formData.Address.street}
+          value={safeFormData.Address.street}
           onChange={(e) => handleInputChange('Address.street', e.target.value)}
         />
       </Grid>
@@ -372,7 +464,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="City"
-          value={formData.Address.city}
+          value={safeFormData.Address.city}
           onChange={(e) => handleInputChange('Address.city', e.target.value)}
         />
       </Grid>
@@ -380,7 +472,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <FormControl fullWidth>
           <InputLabel>State</InputLabel>
           <Select
-            value={formData.Address.state}
+            value={safeFormData.Address.state}
             onChange={(e) => handleInputChange('Address.state', e.target.value)}
             label="State"
           >
@@ -396,7 +488,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="ZIP Code"
-          value={formData.Address.zipCode}
+          value={safeFormData.Address.zipCode}
           onChange={(e) => handleInputChange('Address.zipCode', e.target.value)}
         />
       </Grid>
@@ -414,7 +506,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="Name"
-          value={formData.ProjectManager.name}
+          value={formData.ProjectManager?.name || ''}
           onChange={(e) => handleInputChange('ProjectManager.name', e.target.value)}
         />
       </Grid>
@@ -423,7 +515,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
           fullWidth
           label="Email"
           type="email"
-          value={formData.ProjectManager.email}
+          value={formData.ProjectManager?.email || ''}
           onChange={(e) => handleInputChange('ProjectManager.email', e.target.value)}
         />
       </Grid>
@@ -431,7 +523,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="Phone"
-          value={formData.ProjectManager.phone}
+          value={formData.ProjectManager?.phone || ''}
           onChange={(e) => handleInputChange('ProjectManager.phone', e.target.value)}
         />
       </Grid>
@@ -445,7 +537,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="Name"
-          value={formData.ExecutiveSponsor.name}
+          value={formData.ExecutiveSponsor?.name || ''}
           onChange={(e) => handleInputChange('ExecutiveSponsor.name', e.target.value)}
         />
       </Grid>
@@ -454,7 +546,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
           fullWidth
           label="Email"
           type="email"
-          value={formData.ExecutiveSponsor.email}
+          value={formData.ExecutiveSponsor?.email || ''}
           onChange={(e) => handleInputChange('ExecutiveSponsor.email', e.target.value)}
         />
       </Grid>
@@ -462,7 +554,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <TextField
           fullWidth
           label="Phone"
-          value={formData.ExecutiveSponsor.phone}
+          value={formData.ExecutiveSponsor?.phone || ''}
           onChange={(e) => handleInputChange('ExecutiveSponsor.phone', e.target.value)}
         />
       </Grid>
@@ -478,7 +570,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <FormControlLabel
           control={
             <Switch
-              checked={formData.IntegrationSettings.teams.enabled}
+              checked={formData.IntegrationSettings?.teams?.enabled || false}
               onChange={(e) => handleInputChange('IntegrationSettings.teams.enabled', e.target.checked)}
             />
           }
@@ -486,13 +578,13 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         />
       </Grid>
       
-      {formData.IntegrationSettings.teams.enabled && (
+      {formData.IntegrationSettings?.teams?.enabled && (
         <>
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Teams Webhook URL"
-              value={formData.IntegrationSettings.teams.webhookUrl}
+              value={formData.IntegrationSettings?.teams?.webhookUrl || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.teams.webhookUrl', e.target.value)}
               placeholder="https://your-org.webhook.office.com/webhookb2/..."
             />
@@ -501,7 +593,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
             <TextField
               fullWidth
               label="Channel Name"
-              value={formData.IntegrationSettings.teams.channelName}
+              value={formData.IntegrationSettings?.teams?.channelName || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.teams.channelName', e.target.value)}
               placeholder="EAMS-CompanyName"
             />
@@ -517,7 +609,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <FormControlLabel
           control={
             <Switch
-              checked={formData.IntegrationSettings.confluence.enabled}
+              checked={formData.IntegrationSettings?.confluence?.enabled || false}
               onChange={(e) => handleInputChange('IntegrationSettings.confluence.enabled', e.target.checked)}
             />
           }
@@ -525,13 +617,13 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         />
       </Grid>
       
-      {formData.IntegrationSettings.confluence.enabled && (
+      {formData.IntegrationSettings?.confluence?.enabled && (
         <>
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Confluence URL"
-              value={formData.IntegrationSettings.confluence.url}
+              value={formData.IntegrationSettings?.confluence?.url || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.confluence.url', e.target.value)}
               placeholder="https://your-org.atlassian.net"
             />
@@ -540,7 +632,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
             <TextField
               fullWidth
               label="Username"
-              value={formData.IntegrationSettings.confluence.username}
+              value={formData.IntegrationSettings?.confluence?.username || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.confluence.username', e.target.value)}
             />
           </Grid>
@@ -549,7 +641,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
               fullWidth
               label="API Token"
               type="password"
-              value={formData.IntegrationSettings.confluence.apiToken}
+              value={formData.IntegrationSettings?.confluence?.apiToken || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.confluence.apiToken', e.target.value)}
             />
           </Grid>
@@ -557,7 +649,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
             <TextField
               fullWidth
               label="Space Key"
-              value={formData.IntegrationSettings.confluence.spaceKey}
+              value={formData.IntegrationSettings?.confluence?.spaceKey || ''}
               onChange={(e) => handleInputChange('IntegrationSettings.confluence.spaceKey', e.target.value)}
               placeholder="EAMS"
             />
@@ -590,7 +682,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         <FormControl fullWidth>
           <InputLabel>Distribution Type</InputLabel>
           <Select
-            value={formData.CompanyDistribution.type}
+            value={formData.CompanyDistribution?.type || 'internal'}
             onChange={(e) => handleInputChange('CompanyDistribution.type', e.target.value)}
           >
             <MenuItem value="internal">Internal Only</MenuItem>
@@ -622,7 +714,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
           </Button>
         </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {formData.CompanyDistribution.distributionList.map((email, index) => (
+          {formData.CompanyDistribution?.distributionList?.map((email, index) => (
             <Chip
               key={index}
               label={email}
@@ -683,7 +775,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
         </Box>
       </Grid>
 
-      {formData.CompanyFiles.length === 0 ? (
+      {formData.CompanyFiles?.length === 0 ? (
         <Grid item xs={12}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <AttachFile sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
@@ -698,7 +790,7 @@ const CompanyForm = ({ company, onSave, onCancel, mode = 'create' }) => {
       ) : (
         <Grid item xs={12}>
           <List>
-            {formData.CompanyFiles.map((file, index) => (
+            {formData.CompanyFiles?.map((file, index) => (
               <ListItem key={file.FileID}>
                 <ListItemText
                   primary={file.FileName}

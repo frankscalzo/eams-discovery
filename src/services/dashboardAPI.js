@@ -1,12 +1,29 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { CognitoIdentityProviderClient, ListUsersCommand, AdminListUsersInGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { dynamoConfig, cognitoConfig } from './awsConfig';
+import { getDynamoConfig, getCognitoConfig } from './awsConfig';
 
-// Initialize AWS clients with proper credentials
-const dynamoClient = new DynamoDBClient(dynamoConfig);
-const docClient = DynamoDBDocumentClient.from(dynamoClient);
-const cognitoClient = new CognitoIdentityProviderClient(cognitoConfig);
+// Initialize AWS clients with SSM configuration
+let dynamoClient = null;
+let docClient = null;
+let cognitoClient = null;
+
+const initializeClients = async () => {
+  if (!dynamoClient) {
+    const dynamoConfig = getDynamoConfig();
+    const cognitoConfig = getCognitoConfig();
+    
+    if (dynamoConfig) {
+      dynamoClient = new DynamoDBClient(dynamoConfig);
+      docClient = DynamoDBDocumentClient.from(dynamoClient);
+    }
+    
+    if (cognitoConfig) {
+      cognitoClient = new CognitoIdentityProviderClient(cognitoConfig);
+    }
+  }
+  return { dynamoClient, docClient, cognitoClient };
+};
 
 const TABLE_NAME = process.env.REACT_APP_DYNAMODB_TABLE || 'eams-dev-projects';
 const USER_POOL_ID = process.env.REACT_APP_USER_POOL_ID;

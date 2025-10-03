@@ -1,0 +1,9 @@
+{
+  "name": "eams-auth",
+  "version": "1.0.0",
+  "description": "EAMS Authentication Lambda function",
+  "main": "index.js",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
