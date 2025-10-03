@@ -14,32 +14,21 @@ let config = null;
 // Initialize clients when configuration is available
 const initializeClients = async () => {
   if (!config) {
-    // Hardcode the correct table names so they get compiled into the build
-        config = {
-          userPoolId: 'us-east-1_CevZu4sdm',
-          userPoolClientId: 'qevb9qr68ddbm2tr7grmlgtus',
-          identityPoolId: 'us-east-1:2b17b6f2-9995-42c2-83d4-e1e5f443b7da',
-          dynamoDB: {
-            usersTable: 'eams-dev-users',
-            companiesTable: 'eams-dev-companies',
-            projectsTable: 'eams-dev-projects',
-            applicationsTable: 'eams-dev-applications'
-          },
-          s3: {
-            fileBucket: 'eams-dev-discovery-904233104383'
-          }
-        };
+    // Get configuration from SSM
+    config = await awsConfig;
   }
   
   if (!cognitoClient) {
     cognitoClient = new CognitoIdentityProviderClient({ 
-      region: 'us-east-1'
+      region: config.region,
+      credentials: config.credentials
     });
   }
   
   if (!dynamoClient) {
     dynamoClient = new DynamoDBClient({ 
-      region: 'us-east-1'
+      region: config.region,
+      credentials: config.credentials
     });
   }
   

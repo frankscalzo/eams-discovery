@@ -54,40 +54,26 @@ let dynamoClient, s3Client, textractClient, comprehendClient, bedrockClient;
 
 const initializeClients = () => {
   if (!dynamoClient) {
+    // Use default credential chain - no hardcoded credentials
     dynamoClient = new DynamoDBClient({ 
-      region: config?.awsRegion || 'us-east-1',
-      credentials: {
-        accessKeyId: 'demo-key',
-        secretAccessKey: 'demo-secret'
-      }
+      region: config?.awsRegion || 'us-east-1'
+      // Credentials will be resolved from default credential chain
     });
     s3Client = new S3Client({ 
-      region: config?.awsRegion || 'us-east-1',
-      credentials: {
-        accessKeyId: 'demo-key',
-        secretAccessKey: 'demo-secret'
-      }
+      region: config?.awsRegion || 'us-east-1'
+      // Credentials will be resolved from default credential chain
     });
     textractClient = new TextractClient({ 
-      region: config?.awsRegion || 'us-east-1',
-      credentials: {
-        accessKeyId: 'demo-key',
-        secretAccessKey: 'demo-secret'
-      }
+      region: config?.awsRegion || 'us-east-1'
+      // Credentials will be resolved from default credential chain
     });
     comprehendClient = new ComprehendClient({ 
-      region: config?.awsRegion || 'us-east-1',
-      credentials: {
-        accessKeyId: 'demo-key',
-        secretAccessKey: 'demo-secret'
-      }
+      region: config?.awsRegion || 'us-east-1'
+      // Credentials will be resolved from default credential chain
     });
     bedrockClient = new BedrockRuntimeClient({ 
-      region: config?.awsRegion || 'us-east-1',
-      credentials: {
-        accessKeyId: 'demo-key',
-        secretAccessKey: 'demo-secret'
-      }
+      region: config?.awsRegion || 'us-east-1'
+      // Credentials will be resolved from default credential chain
     });
   }
 };

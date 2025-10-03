@@ -3,13 +3,10 @@ import { SSMClient, GetParameterCommand, GetParametersByPathCommand } from '@aws
 
 class SSMConfigService {
   constructor() {
+    // Initialize SSM client without credentials - will use default credential chain
     this.ssmClient = new SSMClient({ 
-      region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-        sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN
-      }
+      region: process.env.REACT_APP_AWS_REGION || 'us-east-1'
+      // Credentials will be resolved from default credential chain (IAM roles, etc.)
     });
     this.cache = new Map();
     this.cacheExpiry = new Map();
@@ -147,14 +144,11 @@ class SSMConfigService {
     }
   }
 
-  // Fallback configuration if SSM fails
+  // Fallback configuration if SSM fails - NO CREDENTIALS, use default credential chain
   getFallbackConfig() {
     return {
-      credentials: {
-        accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-        sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN
-      },
+      // No credentials - will use default AWS credential chain (IAM roles, etc.)
+      credentials: null,
       region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
       accountId: process.env.REACT_APP_AWS_ACCOUNT_ID || '904233104383',
       userPoolId: process.env.REACT_APP_USER_POOL_ID || 'us-east-1_CevZu4sdm',
