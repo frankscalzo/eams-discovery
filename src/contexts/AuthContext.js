@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, LinearProgress } from '@mui/material';
 import { Warning as WarningIcon } from '@mui/icons-material';
 import { USER_TYPES, USER_ROLES } from '../constants/userTypes';
+import apiGatewayService from '../services/apiGatewayService';
 
 const AuthContext = createContext();
 
@@ -267,93 +268,54 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (usernameOrEmail, password) => {
     try {
-      // Try AWS Cognito first
-      try {
-        const { CognitoUserPool, AuthenticationDetails, CognitoUser } = await import('amazon-cognito-identity-js');
-        
-        // Get Cognito configuration from environment variables
-        const userPoolId = process.env.REACT_APP_USER_POOL_ID;
-        const clientId = process.env.REACT_APP_USER_POOL_CLIENT_ID;
-        
-        if (!userPoolId || !clientId) {
-          throw new Error('Cognito configuration not found in environment variables');
-        }
-        
-        const poolData = {
-          UserPoolId: userPoolId,
-          ClientId: clientId
-        };
-        
-        const userPool = new CognitoUserPool(poolData);
-        const authenticationData = {
-          Username: usernameOrEmail,
-          Password: password,
-        };
-        
-        const authenticationDetails = new AuthenticationDetails(authenticationData);
+      // Use API Gateway + Lambda for authentication
+      const result = await apiGatewayService.login(usernameOrEmail, password);
+      
+      if (result.success) {
         const userData = {
-          Username: usernameOrEmail,
-          Pool: userPool
+          id: result.user.sub,
+          username: result.user.email,
+          email: result.user.email,
+          firstName: result.user.name?.split(' ')[0] || 'User',
+          lastName: result.user.name?.split(' ')[1] || '',
+          userType: result.user.userType || USER_TYPES.PRIMARY_ADMIN,
+          userRole: USER_ROLES[result.user.userType] || USER_ROLES[USER_TYPES.PRIMARY_ADMIN],
+          assignedCompanyId: result.user.companyId || 'primary-company',
+          assignedCompanyName: 'Optimum Cloud Services',
+          isPrimaryCompany: true,
+          assignedProjects: ['proj1', 'proj2', 'proj3'],
+          permissions: USER_ROLES[result.user.userType]?.permissions || USER_ROLES[USER_TYPES.PRIMARY_ADMIN].permissions,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          tokens: {
+            accessToken: result.accessToken,
+            idToken: result.idToken,
+            refreshToken: result.refreshToken
+          }
         };
         
-        const cognitoUser = new CognitoUser(userData);
+        // Store user data and tokens
+        localStorage.setItem('eams_user', JSON.stringify(userData));
+        localStorage.setItem('eams_tokens', JSON.stringify({ 
+          accessToken: result.accessToken, 
+          idToken: result.idToken, 
+          refreshToken: result.refreshToken 
+        }));
         
-        return new Promise((resolve, reject) => {
-          cognitoUser.authenticateUser(authenticationDetails, {
-            onSuccess: (result) => {
-              const accessToken = result.getAccessToken().getJwtToken();
-              const idToken = result.getIdToken().getJwtToken();
-              const refreshToken = result.getRefreshToken().getToken();
-              
-              const userData = {
-                id: usernameOrEmail,
-                username: usernameOrEmail,
-                email: usernameOrEmail,
-                firstName: 'Admin',
-                lastName: 'User',
-                userType: USER_TYPES.PRIMARY_ADMIN,
-                userRole: USER_ROLES[USER_TYPES.PRIMARY_ADMIN],
-                assignedCompanyId: 'primary-company',
-                assignedCompanyName: 'Optimum Cloud Services',
-                isPrimaryCompany: true,
-                assignedProjects: ['proj1', 'proj2', 'proj3'],
-                permissions: USER_ROLES[USER_TYPES.PRIMARY_ADMIN].permissions,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                tokens: {
-                  accessToken,
-                  idToken,
-                  refreshToken
-                }
-              };
-              
-              // Store user data and tokens
-              localStorage.setItem('eams_user', JSON.stringify(userData));
-              localStorage.setItem('eams_tokens', JSON.stringify({ accessToken, idToken, refreshToken }));
-              
-              setIsAuthenticated(true);
-              setUser(userData);
-              startSessionTimeout();
-              startIdleTimeout();
-              resolve(true);
-            },
-            onFailure: (err) => {
-              console.error('Cognito login error:', err);
-              // Fall back to mock authentication
-              fallbackLogin(usernameOrEmail, password, resolve, reject);
-            }
-          });
-        });
-      } catch (cognitoError) {
-        console.error('Cognito setup error:', cognitoError);
-        // Fall back to mock authentication
-        return new Promise((resolve, reject) => {
-          fallbackLogin(usernameOrEmail, password, resolve, reject);
-        });
+        setIsAuthenticated(true);
+        setUser(userData);
+        startSessionTimeout();
+        startIdleTimeout();
+        return true;
+      } else {
+        throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      // Fall back to mock authentication for development
+      return new Promise((resolve, reject) => {
+        fallbackLogin(usernameOrEmail, password, resolve, reject);
+      });
     }
   };
 
@@ -400,29 +362,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // Clear all timeouts
-    clearAllTimeouts();
-    
-    // Clear warning state
-    setShowIdleWarning(false);
-    setIdleWarningCountdown(0);
-    
-    // Clear all authentication data
-    localStorage.removeItem('eams_user');
-    localStorage.removeItem('eams_tokens');
-    localStorage.removeItem('eams_session');
-    localStorage.removeItem('cognito_user');
-    localStorage.removeItem('cognito_tokens');
-    
-    // Clear any other potential auth storage
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('eams_') || key.startsWith('cognito_')) {
-        localStorage.removeItem(key);
-      }
-    });
-    
-    setIsAuthenticated(false);
-    setUser(null);
+    try {
+      // Use API Gateway + Lambda for logout
+      await apiGatewayService.logout();
+    } catch (error) {
+      console.error('API logout error:', error);
+      // Continue with local logout even if API call fails
+    } finally {
+      // Clear all timeouts
+      clearAllTimeouts();
+      
+      // Clear warning state
+      setShowIdleWarning(false);
+      setIdleWarningCountdown(0);
+      
+      // Clear all authentication data
+      localStorage.removeItem('eams_user');
+      localStorage.removeItem('eams_tokens');
+      localStorage.removeItem('eams_session');
+      localStorage.removeItem('cognito_user');
+      localStorage.removeItem('cognito_tokens');
+      
+      // Clear any other potential auth storage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('eams_') || key.startsWith('cognito_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      setIsAuthenticated(false);
+      setUser(null);
+    }
   };
 
   // Force logout and clear all data

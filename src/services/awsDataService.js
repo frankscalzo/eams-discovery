@@ -3,7 +3,7 @@ import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPass
 import { DynamoDBClient, PutItemCommand, GetItemCommand, ScanCommand, UpdateItemCommand, DeleteItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { awsConfig } from './awsConfig';
-// import ssmConfigService from './ssmConfigService';
+import apiGatewayService from './apiGatewayService';
 import { getUserLevelInfo, USER_LEVELS } from '../constants/userPermissions';
 
 // Initialize clients with SSM configuration
@@ -208,27 +208,21 @@ class AWSDataService {
 
   async getUsers(currentUser) {
     try {
-      const { dynamoClient, config } = await initializeClients();
+      // Use API Gateway + Lambda for data fetching
+      const result = await apiGatewayService.getUsers();
       
-      const command = new ScanCommand({
-        TableName: config.dynamoDB.usersTable,
-        FilterExpression: 'begins_with(PK, :pk)',
-        ExpressionAttributeValues: {
-          ':pk': { S: 'USER#' }
-        }
-      });
-
-      const result = await dynamoClient.send(command);
-      const users = result.Items?.map(item => unmarshall(item)) || [];
-
-      // Filter based on user permissions
-      const filteredUsers = this.filterUsersByPermission(users, currentUser);
-
-      return {
-        success: true,
-        users: filteredUsers,
-        total: filteredUsers.length
-      };
+      if (result.success) {
+        // Filter based on user permissions
+        const filteredUsers = this.filterUsersByPermission(result.data || [], currentUser);
+        
+        return {
+          success: true,
+          users: filteredUsers,
+          total: filteredUsers.length
+        };
+      } else {
+        throw new Error(result.error || 'Failed to fetch users');
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       return {
@@ -321,27 +315,21 @@ class AWSDataService {
 
   async getCompanies(currentUser) {
     try {
-      const { dynamoClient, config } = await initializeClients();
+      // Use API Gateway + Lambda for data fetching
+      const result = await apiGatewayService.getCompanies();
       
-      const command = new ScanCommand({
-        TableName: config.dynamoDB.companiesTable,
-        FilterExpression: 'begins_with(PK, :pk)',
-        ExpressionAttributeValues: {
-          ':pk': { S: 'COMPANY#' }
-        }
-      });
-
-      const result = await dynamoClient.send(command);
-      const companies = result.Items?.map(item => unmarshall(item)) || [];
-
-      // Filter based on user permissions
-      const filteredCompanies = this.filterCompaniesByPermission(companies, currentUser);
-
-      return {
-        success: true,
-        companies: filteredCompanies,
-        total: filteredCompanies.length
-      };
+      if (result.success) {
+        // Filter based on user permissions
+        const filteredCompanies = this.filterCompaniesByPermission(result.data || [], currentUser);
+        
+        return {
+          success: true,
+          companies: filteredCompanies,
+          total: filteredCompanies.length
+        };
+      } else {
+        throw new Error(result.error || 'Failed to fetch companies');
+      }
     } catch (error) {
       console.error('Error fetching companies:', error);
       return {
@@ -410,27 +398,21 @@ class AWSDataService {
 
   async getProjects(currentUser) {
     try {
-      const { dynamoClient, config } = await initializeClients();
+      // Use API Gateway + Lambda for data fetching
+      const result = await apiGatewayService.getProjects();
       
-      const command = new ScanCommand({
-        TableName: config.dynamoDB.projectsTable,
-        FilterExpression: 'begins_with(PK, :pk)',
-        ExpressionAttributeValues: {
-          ':pk': { S: 'PROJECT#' }
-        }
-      });
-
-      const result = await dynamoClient.send(command);
-      const projects = result.Items?.map(item => unmarshall(item)) || [];
-
-      // Filter based on user permissions
-      const filteredProjects = this.filterProjectsByPermission(projects, currentUser);
-
-      return {
-        success: true,
-        projects: filteredProjects,
-        total: filteredProjects.length
-      };
+      if (result.success) {
+        // Filter based on user permissions
+        const filteredProjects = this.filterProjectsByPermission(result.data || [], currentUser);
+        
+        return {
+          success: true,
+          projects: filteredProjects,
+          total: filteredProjects.length
+        };
+      } else {
+        throw new Error(result.error || 'Failed to fetch projects');
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
       return {

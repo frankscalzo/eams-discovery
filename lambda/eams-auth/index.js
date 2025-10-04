@@ -177,6 +177,82 @@ exports.handler = async (event) => {
             };
         }
 
+        // Route: /auth/login - direct login with username/password
+        if (path === '/auth/login' && httpMethod === 'POST') {
+            const { username, password } = JSON.parse(body || '{}');
+            
+            if (!username || !password) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: 'Username and password required' })
+                };
+            }
+
+            try {
+                // Use AWS SDK to authenticate with Cognito
+                const { CognitoIdentityProviderClient, AdminInitiateAuthCommand } = require('@aws-sdk/client-cognito-identity-provider');
+                
+                const cognitoClient = new CognitoIdentityProviderClient({ region: 'us-east-1' });
+                
+                const authParams = {
+                    UserPoolId: process.env.USER_POOL_ID || 'us-east-1_CevZu4sdm',
+                    ClientId: process.env.CLIENT_ID || 'qevb9qr68ddbm2tr7grmlgtus',
+                    AuthFlow: 'ADMIN_NO_SRP_AUTH',
+                    AuthParameters: {
+                        USERNAME: username,
+                        PASSWORD: password
+                    }
+                };
+
+                const authResult = await cognitoClient.send(new AdminInitiateAuthCommand(authParams));
+                
+                if (authResult.AuthenticationResult) {
+                    const { AccessToken, IdToken, RefreshToken } = authResult.AuthenticationResult;
+                    
+                    // Decode ID token to get user info
+                    const userInfo = JSON.parse(Buffer.from(IdToken.split('.')[1], 'base64').toString());
+                    
+                    // Create session cookie
+                    const sessionCookie = createSessionCookie(userInfo);
+                    
+                    return {
+                        statusCode: 200,
+                        headers: {
+                            ...corsHeaders,
+                            'Set-Cookie': sessionCookie
+                        },
+                        body: JSON.stringify({
+                            success: true,
+                            user: {
+                                sub: userInfo.sub,
+                                email: userInfo.email,
+                                name: userInfo.name || userInfo.email,
+                                userType: userInfo['custom:user_type'] || 'user',
+                                companyId: userInfo['custom:company_id'] || null
+                            },
+                            accessToken: AccessToken,
+                            idToken: IdToken,
+                            refreshToken: RefreshToken
+                        })
+                    };
+                } else {
+                    return {
+                        statusCode: 401,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: 'Invalid credentials' })
+                    };
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                return {
+                    statusCode: 401,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: 'Invalid credentials' })
+                };
+            }
+        }
+
         // Route: /auth/logout - clear session
         if (path === '/auth/logout' && httpMethod === 'POST') {
             return {
