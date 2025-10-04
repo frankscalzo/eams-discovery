@@ -92,28 +92,9 @@ class AWSDataService {
   // User Management
   async createUser(userData, currentUser) {
     try {
-      // Validate permissions
-      if (!this.canCreateUser(currentUser, userData)) {
-        throw new Error('Insufficient permissions to create this user type');
-      }
-
-      // Create user in Cognito
-      const cognitoUser = await this.createCognitoUser(userData);
-      
-      // Create user record in DynamoDB
-      const dynamoUser = await this.createDynamoUser(cognitoUser, userData);
-      
-      // Add user to appropriate Cognito groups
-      await this.addUserToGroups(cognitoUser.Username, userData.userType, userData.assignedCompanyId);
-      
-      return {
-        success: true,
-        user: {
-          ...dynamoUser,
-          cognitoUsername: cognitoUser.Username,
-          cognitoSub: cognitoUser.Attributes?.find(attr => attr.Name === 'sub')?.Value
-        }
-      };
+      // Use API Gateway + Lambda for user creation
+      const result = await apiGatewayService.createUser(userData);
+      return result;
     } catch (error) {
       console.error('Error creating user:', error);
       return {
@@ -262,48 +243,9 @@ class AWSDataService {
   // Company Management
   async createCompany(companyData, currentUser) {
     try {
-      const { dynamoClient, config } = await initializeClients();
-      
-      console.log('createCompany called with currentUser:', currentUser);
-      console.log('companyData:', companyData);
-      
-      if (!this.canCreateCompany(currentUser)) {
-        console.error('Permission denied for user:', currentUser);
-        throw new Error('Insufficient permissions to create companies');
-      }
-
-      const companyId = `company_${Date.now()}`;
-      const now = new Date().toISOString();
-      
-      const companyRecord = {
-        PK: `COMPANY#${companyId}`,
-        SK: `PROFILE#${companyId}`,
-        CompanyID: companyId,
-        Name: companyData.name,
-        Type: companyData.type || 'client',
-        Industry: companyData.industry || '',
-        Size: companyData.size || 'Small',
-        Location: companyData.location || '',
-        ContactEmail: companyData.contactEmail,
-        ContactPhone: companyData.contactPhone || '',
-        Status: companyData.status || 'Active',
-        CreatedAt: now,
-        UpdatedAt: now,
-        CreatedBy: currentUser?.UserID || 'system',
-        Projects: []
-      };
-
-      const command = new PutItemCommand({
-        TableName: config.dynamoDB.companiesTable,
-        Item: marshall(companyRecord)
-      });
-
-      await dynamoClient.send(command);
-      
-      return {
-        success: true,
-        company: companyRecord
-      };
+      // Use API Gateway + Lambda for company creation
+      const result = await apiGatewayService.createCompany(companyData);
+      return result;
     } catch (error) {
       console.error('Error creating company:', error);
       return {
@@ -344,49 +286,9 @@ class AWSDataService {
   // Project Management
   async createProject(projectData, currentUser) {
     try {
-      const { dynamoClient, config } = await initializeClients();
-      
-      if (!this.canCreateProject(currentUser)) {
-        throw new Error('Insufficient permissions to create projects');
-      }
-
-      const projectId = `project_${Date.now()}`;
-      const now = new Date().toISOString();
-      
-      const projectRecord = {
-        PK: `PROJECT#${projectId}`,
-        SK: `PROFILE#${projectId}`,
-        GSI1PK: `COMPANY#${projectData.companyId}`,
-        GSI1SK: `PROJECT#${projectId}`,
-        ProjectID: projectId,
-        Name: projectData.name,
-        Description: projectData.description || '',
-        CompanyId: projectData.companyId,
-        Status: projectData.status || 'Planning',
-        StartDate: projectData.startDate || '',
-        EndDate: projectData.endDate || '',
-        ProjectManager: projectData.projectManager || '',
-        Budget: projectData.budget || 0,
-        CreatedAt: now,
-        UpdatedAt: now,
-        CreatedBy: currentUser?.UserID || 'system',
-        Applications: [],
-        Contacts: [],
-        Issues: [],
-        DiscoveryQuestions: []
-      };
-
-      const command = new PutItemCommand({
-        TableName: config.dynamoDB.projectsTable,
-        Item: marshall(projectRecord)
-      });
-
-      await dynamoClient.send(command);
-      
-      return {
-        success: true,
-        project: projectRecord
-      };
+      // Use API Gateway + Lambda for project creation
+      const result = await apiGatewayService.createProject(projectData);
+      return result;
     } catch (error) {
       console.error('Error creating project:', error);
       return {

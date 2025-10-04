@@ -312,54 +312,10 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      // Fall back to mock authentication for development
-      return new Promise((resolve, reject) => {
-        fallbackLogin(usernameOrEmail, password, resolve, reject);
-      });
+      throw error; // No fallback - only use API Gateway
     }
   };
 
-  const fallbackLogin = (usernameOrEmail, password, resolve, reject) => {
-    // Fallback authentication for development
-    const validCredentials = [
-      { username: 'admin@optimumcloudservices.com', password: 'AdminPass123!' },
-      { username: 'fscalzo', email: 'fscalzo@optimumhit.com', password: 'Babymakes7!' }
-    ];
-
-    const validUser = validCredentials.find(
-      cred => (cred.username === usernameOrEmail || cred.email === usernameOrEmail) && cred.password === password
-    );
-
-    if (validUser) {
-      const userData = {
-        id: usernameOrEmail,
-        username: usernameOrEmail,
-        email: usernameOrEmail,
-        firstName: usernameOrEmail === 'fscalzo' ? 'Frank' : 'Admin',
-        lastName: usernameOrEmail === 'fscalzo' ? 'Scalzo' : 'User',
-        userType: USER_TYPES.PRIMARY_ADMIN,
-        userRole: USER_ROLES[USER_TYPES.PRIMARY_ADMIN],
-        assignedCompanyId: 'primary-company',
-        assignedCompanyName: 'Optimum Cloud Services',
-        isPrimaryCompany: true,
-        assignedProjects: ['proj1', 'proj2', 'proj3'],
-        permissions: USER_ROLES[USER_TYPES.PRIMARY_ADMIN].permissions,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // Store user data
-      localStorage.setItem('eams_user', JSON.stringify(userData));
-      
-      setIsAuthenticated(true);
-      setUser(userData);
-      startSessionTimeout();
-      startIdleTimeout();
-      resolve(true);
-    } else {
-      reject(new Error('Invalid credentials'));
-    }
-  };
 
   const logout = async () => {
     try {
