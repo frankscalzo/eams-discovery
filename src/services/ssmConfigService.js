@@ -98,6 +98,12 @@ class SSMConfigService {
     }
 
     try {
+      // In browser environment, use fallback config since SSM requires server-side access
+      if (typeof window !== 'undefined') {
+        console.log('Browser environment detected, using fallback configuration');
+        return this.getFallbackConfig();
+      }
+
       const [credentials, configParams] = await Promise.all([
         this.getAWSCredentials(),
         this.getParametersByPath('/eams/dev/config')
@@ -153,15 +159,15 @@ class SSMConfigService {
       accountId: process.env.REACT_APP_AWS_ACCOUNT_ID || '904233104383',
       userPoolId: process.env.REACT_APP_USER_POOL_ID || 'us-east-1_CevZu4sdm',
       userPoolClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID || 'qevb9qr68ddbm2tr7grmlgtus',
-      identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID || 'us-east-1:213c093b-a282-4c8a-9579-4498b5261471',
+      identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID || 'us-east-1:2b17b6f2-9995-42c2-83d4-e1e5f443b7da',
       dynamoDB: {
-        usersTable: process.env.REACT_APP_DYNAMODB_USERS_TABLE || 'eams-users',
-        companiesTable: process.env.REACT_APP_DYNAMODB_COMPANIES_TABLE || 'eams-companies',
-        projectsTable: process.env.REACT_APP_DYNAMODB_PROJECTS_TABLE || 'eams-projects',
-        applicationsTable: process.env.REACT_APP_DYNAMODB_APPLICATIONS_TABLE || 'eams-applications'
+        usersTable: process.env.REACT_APP_DYNAMODB_USERS_TABLE || 'eams-dev-users',
+        companiesTable: process.env.REACT_APP_DYNAMODB_COMPANIES_TABLE || 'eams-dev-companies',
+        projectsTable: process.env.REACT_APP_DYNAMODB_PROJECTS_TABLE || 'eams-dev-projects',
+        applicationsTable: process.env.REACT_APP_DYNAMODB_APPLICATIONS_TABLE || 'eams-dev-applications'
       },
       s3: {
-        fileBucket: process.env.REACT_APP_S3_FILE_BUCKET || 'eams-dev-storage-904233104383'
+        fileBucket: process.env.REACT_APP_S3_FILE_BUCKET || 'eams-dev-discovery-904233104383'
       },
       environment: 'dev',
       stage: 'dev',

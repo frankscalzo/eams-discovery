@@ -16,6 +16,7 @@ const initializeClients = async () => {
   if (!config) {
     // Get configuration from SSM
     config = await awsConfig;
+    console.log('Loaded config from SSM:', config);
   }
   
   if (!cognitoClient) {
