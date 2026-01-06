@@ -154,9 +154,6 @@ Resources:
           AttributeDataType: String
           Required: false
           Mutable: true
-      MfaConfiguration: OPTIONAL
-      SoftwareTokenMfaConfiguration:
-        Enabled: true
 
   # Cognito User Pool Client
   UserPoolClient:
@@ -266,6 +263,252 @@ Resources:
             AllowedOrigins: ['*']
             MaxAge: 3000
 
+  # API Gateway
+  EamsApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'eams-${Environment}-api'
+      Description: 'EAMS API Gateway'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Resources
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: auth
+
+  AuthLoginResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: login
+
+  AuthCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: callback
+
+  AuthMeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: me
+
+  AuthLogoutResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !Ref AuthResource
+      PathPart: logout
+
+  UsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: users
+
+  CompaniesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: companies
+
+  ProjectsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: projects
+
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ParentId: !GetAtt EamsApiGateway.RootResourceId
+      PathPart: health
+
+  # Lambda function for authentication
+  EamsAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'eams-${Environment}-auth'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt AuthLambdaRole.Arn
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          USER_POOL_CLIENT_ID: !Ref UserPoolClient
+          USERS_TABLE: !Ref UsersTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const cognito = new AWS.CognitoIdentityServiceProvider();
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          
+          exports.handler = async (event) => {
+            const { httpMethod, path, body } = event;
+            
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+              'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+              'Content-Type': 'application/json'
+            };
+            
+            if (httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
+            }
+            
+            try {
+              if (path === '/auth/login' && httpMethod === 'GET') {
+                // Redirect to Cognito hosted UI
+                const loginUrl = `https://${process.env.USER_POOL_ID}.auth.${process.env.AWS_REGION || 'us-east-1'}.amazoncognito.com/login?client_id=${process.env.USER_POOL_CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent('https://dev-discovery.optimumcloudservices.com/auth/callback')}`;
+                
+                return {
+                  statusCode: 302,
+                  headers: {
+                    ...headers,
+                    'Location': loginUrl
+                  },
+                  body: ''
+                };
+              }
+              
+              if (path === '/auth/callback' && httpMethod === 'GET') {
+                // Handle OAuth callback
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ message: 'Authentication successful' })
+                };
+              }
+              
+              if (path === '/auth/me' && httpMethod === 'GET') {
+                // Get current user info
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ user: { id: 'test-user', email: 'test@example.com' } })
+                };
+              }
+              
+              if (path === '/auth/logout' && httpMethod === 'POST') {
+                // Logout
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ message: 'Logged out successfully' })
+                };
+              }
+              
+              return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ error: 'Not found' })
+              };
+            } catch (error) {
+              return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: error.message })
+              };
+            }
+          };
+
+  # Lambda function for API
+  EamsApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'eams-${Environment}-api'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt ApiLambdaRole.Arn
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          COMPANIES_TABLE: !Ref CompaniesTable
+          PROJECTS_TABLE: !Ref ProjectsTable
+          APPLICATIONS_TABLE: !Ref ApplicationsTable
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const dynamodb = new AWS.DynamoDB.DocumentClient();
+          
+          exports.handler = async (event) => {
+            const { httpMethod, path, body } = event;
+            
+            const headers = {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+              'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+              'Content-Type': 'application/json'
+            };
+            
+            if (httpMethod === 'OPTIONS') {
+              return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
+            }
+            
+            try {
+              if (path === '/health' && httpMethod === 'GET') {
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() })
+                };
+              }
+              
+              if (path === '/users' && httpMethod === 'GET') {
+                const result = await dynamodb.scan({ TableName: process.env.USERS_TABLE }).promise();
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ success: true, users: result.Items || [], count: result.Items?.length || 0 })
+                };
+              }
+              
+              if (path === '/companies' && httpMethod === 'GET') {
+                const result = await dynamodb.scan({ TableName: process.env.COMPANIES_TABLE }).promise();
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ success: true, companies: result.Items || [], count: result.Items?.length || 0 })
+                };
+              }
+              
+              if (path === '/projects' && httpMethod === 'GET') {
+                const result = await dynamodb.scan({ TableName: process.env.PROJECTS_TABLE }).promise();
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({ success: true, projects: result.Items || [], count: result.Items?.length || 0 })
+                };
+              }
+              
+              return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ error: 'Not found' })
+              };
+            } catch (error) {
+              return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: error.message })
+              };
+            }
+          };
+
   # Lambda function for file processing
   FileProcessorFunction:
     Type: AWS::Lambda::Function
@@ -287,6 +530,83 @@ Resources:
                   'statusCode': 200,
                   'body': json.dumps('File processed successfully')
               }
+
+  # IAM Role for Auth Lambda
+  AuthLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CognitoAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:AdminRespondToAuthChallenge
+                Resource: !GetAtt UserPool.Arn
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !Sub '${UsersTable.Arn}/index/*'
+
+  # IAM Role for API Lambda
+  ApiLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !GetAtt CompaniesTable.Arn
+                  - !GetAtt ProjectsTable.Arn
+                  - !GetAtt ApplicationsTable.Arn
+                  - !Sub '${UsersTable.Arn}/index/*'
+                  - !Sub '${ProjectsTable.Arn}/index/*'
+                  - !Sub '${ApplicationsTable.Arn}/index/*'
 
   # IAM Role for Lambda
   FileProcessorRole:
@@ -312,7 +632,143 @@ Resources:
                   - s3:PutObject
                 Resource: !Sub '${FileUploadBucket.Arn}/*'
 
+  # API Gateway Methods
+  GetAuthLoginMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthLoginResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  GetAuthCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  GetAuthMeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthMeResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  PostAuthLogoutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref AuthLogoutResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsAuthFunction.Arn}/invocations'
+
+  GetUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref UsersResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetCompaniesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref CompaniesResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetProjectsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref ProjectsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  GetHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EamsApiFunction.Arn}/invocations'
+
+  # Lambda Permissions for API Gateway
+  AuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EamsAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${EamsApiGateway}/*/*'
+
+  ApiLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EamsApiFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${EamsApiGateway}/*/*'
+
+  # API Gateway Deployment
+  EamsApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetAuthLoginMethod
+      - GetAuthCallbackMethod
+      - GetAuthMeMethod
+      - PostAuthLogoutMethod
+      - GetUsersMethod
+      - GetCompaniesMethod
+      - GetProjectsMethod
+      - GetHealthMethod
+    Properties:
+      RestApiId: !Ref EamsApiGateway
+      StageName: !Ref Environment
+
 Outputs:
+  ApiUrl:
+    Description: 'API Gateway URL'
+    Value: !Sub 'https://${EamsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+
   UserPoolId:
     Description: 'Cognito User Pool ID'
     Value: !Ref UserPool
@@ -360,6 +816,8 @@ Outputs:
     Value: !Ref FileUploadBucket
     Export:
       Name: !Sub '${AWS::StackName}-FileUploadBucketName'
+
+
 
 
 

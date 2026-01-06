@@ -1,4 +1,4 @@
-// EAMS User API - Identical to AWS Transfer Workspace pattern
+// EAMS User API - User management service
 import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminDeleteUserCommand, AdminUpdateUserAttributesCommand, AdminListUsersInGroupCommand, AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { DynamoDBClient, PutItemCommand, GetItemCommand, ScanCommand, UpdateItemCommand, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -390,6 +390,8 @@ class EAMSUserAPI {
 }
 
 export default new EAMSUserAPI();
+
+
 
 
 

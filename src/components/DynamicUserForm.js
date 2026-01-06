@@ -28,7 +28,7 @@ import {
   Chip
 } from '@mui/material';
 import awsDataService from '../services/awsDataService';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import { 
   PERMISSION_TYPES, 
   PERMISSION_CATEGORIES, 
@@ -93,7 +93,7 @@ const US_STATES = [
 ];
 
 const DynamicUserForm = ({ open, onClose, onSuccess, user = null }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

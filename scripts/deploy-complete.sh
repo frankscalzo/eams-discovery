@@ -49,6 +49,12 @@ fi
 
 # Get stack outputs
 echo -e "${YELLOW}📋 Retrieving stack outputs...${NC}"
+API_URL=$(aws cloudformation describe-stacks \
+    --stack-name $STACK_NAME \
+    --region $REGION \
+    --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+    --output text)
+
 USER_POOL_ID=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $REGION \
@@ -100,6 +106,7 @@ FILE_BUCKET=$(aws cloudformation describe-stacks \
 # Create environment file
 echo -e "${YELLOW}📝 Creating environment configuration...${NC}"
 cat > .env.production << EOF
+REACT_APP_API_GATEWAY_URL=$API_URL
 REACT_APP_AWS_REGION=$REGION
 REACT_APP_USER_POOL_ID=$USER_POOL_ID
 REACT_APP_USER_POOL_CLIENT_ID=$USER_POOL_CLIENT_ID
@@ -146,6 +153,7 @@ echo -e "${GREEN}✅ Initial data seeded${NC}"
 # Display configuration
 echo -e "${BLUE}📋 Configuration Summary${NC}"
 echo "=========================="
+echo -e "API Gateway URL: ${GREEN}$API_URL${NC}"
 echo -e "User Pool ID: ${GREEN}$USER_POOL_ID${NC}"
 echo -e "User Pool Client ID: ${GREEN}$USER_POOL_CLIENT_ID${NC}"
 echo -e "Identity Pool ID: ${GREEN}$IDENTITY_POOL_ID${NC}"
@@ -161,6 +169,8 @@ echo "1. Copy the .env.production file to your project root"
 echo "2. Run 'npm run build' to build with AWS configuration"
 echo "3. Deploy the built files to S3"
 echo "4. Test the application with admin@eams.com / AdminPass123!"
+
+
 
 
 

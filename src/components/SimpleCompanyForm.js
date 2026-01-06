@@ -16,7 +16,7 @@ import {
   MenuItem
 } from '@mui/material';
 import awsDataService from '../services/awsDataService';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 
 // US States list
 const US_STATES = [
@@ -74,7 +74,7 @@ const US_STATES = [
 ];
 
 const SimpleCompanyForm = ({ open, onClose, onSuccess }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const [formData, setFormData] = useState({
     name: '',
     industry: '',

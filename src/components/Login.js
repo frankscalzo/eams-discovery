@@ -14,14 +14,14 @@ import {
   Divider,
   Link
 } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login } = useBffAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

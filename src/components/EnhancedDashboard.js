@@ -55,7 +55,7 @@ import {
   ArcElement
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import { useProject } from '../contexts/ProjectContext';
 import awsDataService from '../services/awsDataService';
 import BackButton from './BackButton';
@@ -75,7 +75,7 @@ ChartJS.register(
 
 const EnhancedDashboard = () => {
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const { currentProject } = useProject();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({

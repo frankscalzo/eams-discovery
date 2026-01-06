@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -6,22 +7,52 @@ import {
   Button,
   Box,
   CircularProgress,
-  Alert
+  Alert,
+  TextField
 } from '@mui/material';
 import { useBffAuth } from '../contexts/BffAuthContext';
 
 const BffLogin = () => {
-  const { login } = useBffAuth();
+  const { login, isAuthenticated } = useBffAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!username || !password) {
+      setError('Please enter both username and password');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError('');
-      await login();
+      console.log('BffLogin: Starting login for:', username);
+      
+      const result = await login(username, password);
+      console.log('BffLogin: Login result:', result);
+      
+      if (result && result.success) {
+        console.log('BffLogin: Login successful, redirecting to dashboard');
+        setIsLoading(false);
+        // Use window.location for a hard redirect to ensure it works
+        window.location.href = '/dashboard';
+      } else {
+        throw new Error('Login failed: Invalid response from server');
+      }
     } catch (error) {
-      setError(error.message || 'Login failed');
+      console.error('BffLogin: Login error:', error);
+      setError(error.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
     }
   };
@@ -42,7 +73,7 @@ const BffLogin = () => {
           </Typography>
           
           <Typography variant="body1" align="center" color="textSecondary" paragraph>
-            Click the button below to sign in with your AWS Cognito account.
+            Enter your credentials to sign in to EAMS.
           </Typography>
 
           {error && (
@@ -51,22 +82,50 @@ const BffLogin = () => {
             </Alert>
           )}
 
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Box component="form" onSubmit={handleLogin} sx={{ mt: 3 }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="username"
+              label="Username or Email"
+              name="username"
+              autoComplete="username"
+              autoFocus
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              sx={{ mb: 3 }}
+            />
+            
             <Button
+              type="submit"
+              fullWidth
               variant="contained"
-              color="primary"
               size="large"
-              onClick={handleLogin}
               disabled={isLoading}
               startIcon={isLoading ? <CircularProgress size={20} /> : null}
               sx={{ minWidth: 200 }}
             >
-              {isLoading ? 'Signing In...' : 'Sign In with Cognito'}
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
           </Box>
 
           <Typography variant="caption" display="block" align="center" sx={{ mt: 2 }}>
-            You will be redirected to AWS Cognito for authentication
+            Test Credentials: admin@optimumcloudservices.com / AdminPass123!
           </Typography>
         </Paper>
       </Box>

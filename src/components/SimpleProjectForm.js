@@ -15,10 +15,10 @@ import {
   MenuItem
 } from '@mui/material';
 import awsDataService from '../services/awsDataService';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 
 const SimpleProjectForm = ({ open, onClose, onSuccess }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',

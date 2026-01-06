@@ -2,14 +2,36 @@
 class APIGatewayService {
   constructor() {
     // API Gateway endpoints
-    this.authApiUrl = process.env.REACT_APP_AUTH_API_URL || 'https://4duhmwypm2.execute-api.us-east-1.amazonaws.com/dev';
-    this.dataApiUrl = process.env.REACT_APP_DATA_API_URL || 'https://4duhmwypm2.execute-api.us-east-1.amazonaws.com/dev';
+    this.authApiUrl = 'https://r9flk98o68.execute-api.us-east-1.amazonaws.com/dev';
+    this.dataApiUrl = 'https://r9flk98o68.execute-api.us-east-1.amazonaws.com/dev';
+    this.configLoaded = false;
+    this.loadConfig();
+  }
+
+  async loadConfig() {
+    if (this.configLoaded) return;
+    
+    try {
+      const response = await fetch('/config.json');
+      const config = await response.json();
+      if (config.apiGatewayUrl) {
+        this.authApiUrl = config.apiGatewayUrl;
+        this.dataApiUrl = config.apiGatewayUrl;
+        console.log('APIGatewayService: Loaded API Gateway URL from config:', this.authApiUrl);
+      }
+      this.configLoaded = true;
+    } catch (error) {
+      console.error('Error loading config:', error);
+      // Keep default URLs
+      this.configLoaded = true;
+    }
   }
 
   // Authentication methods
   async login(username, password) {
+    await this.loadConfig();
     try {
-      const response = await fetch(`${this.authApiUrl}/auth/login`, {
+      const response = await fetch(`${this.authApiUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,8 +54,9 @@ class APIGatewayService {
   }
 
   async logout() {
+    await this.loadConfig();
     try {
-      const response = await fetch(`${this.authApiUrl}/auth/logout`, {
+      const response = await fetch(`${this.authApiUrl}/logout`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -50,8 +73,9 @@ class APIGatewayService {
   }
 
   async getCurrentUser() {
+    await this.loadConfig();
     try {
-      const response = await fetch(`${this.authApiUrl}/auth/me`, {
+      const response = await fetch(`${this.authApiUrl}/me`, {
         method: 'GET',
         credentials: 'include'
       });
@@ -73,6 +97,7 @@ class APIGatewayService {
 
   // Data methods
   async getUsers() {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/users`, {
         method: 'GET',
@@ -92,6 +117,7 @@ class APIGatewayService {
   }
 
   async getCompanies() {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/companies`, {
         method: 'GET',
@@ -111,6 +137,7 @@ class APIGatewayService {
   }
 
   async getProjects() {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/projects`, {
         method: 'GET',
@@ -130,6 +157,7 @@ class APIGatewayService {
   }
 
   async createUser(userData) {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/users`, {
         method: 'POST',
@@ -154,6 +182,7 @@ class APIGatewayService {
   }
 
   async createCompany(companyData) {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/companies`, {
         method: 'POST',
@@ -179,6 +208,7 @@ class APIGatewayService {
 
   // Health check
   async healthCheck() {
+    await this.loadConfig();
     try {
       const response = await fetch(`${this.dataApiUrl}/health`, {
         method: 'GET'

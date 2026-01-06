@@ -1,4 +1,4 @@
-// AWS Data Service - Production-ready data management following AWS Transfer pattern
+// AWS Data Service - Production-ready data management service
 import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminDeleteUserCommand, AdminUpdateUserAttributesCommand, AdminListUsersInGroupCommand, AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand, InitiateAuthCommand, RespondToAuthChallengeCommand, AuthFlowType } from '@aws-sdk/client-cognito-identity-provider';
 import { DynamoDBClient, PutItemCommand, GetItemCommand, ScanCommand, UpdateItemCommand, DeleteItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -142,7 +142,7 @@ class AWSDataService {
     // Get user level information
     const userLevelInfo = getUserLevelInfo(userData.userLevel || USER_LEVELS.STANDARD);
     
-    // AWS Transfer pattern - Single table design with proper GSI structure
+    // Single table design with proper GSI structure
     const userRecord = {
       PK: `USER#${userId}`,
       SK: `PROFILE#${userId}`,

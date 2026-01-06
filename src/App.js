@@ -73,8 +73,8 @@ function AppContent() {
             <Route path="/third-party-apps" element={<ProtectedRoute><ThirdPartyAppsRepository /></ProtectedRoute>} />
             <Route path="/co-travelers" element={<ProtectedRoute><CoTravelersRepository /></ProtectedRoute>} />
             <Route path="/data-importer" element={<ProtectedRoute><DataImporter /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
               </Routes>
       </Box>
     </>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import awsDataService from '../services/awsDataService';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import SimpleUserForm from './SimpleUserForm';
 import DynamicUserForm from './DynamicUserForm';
 import {
@@ -61,7 +61,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const { userId } = useParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -24,11 +24,11 @@ import {
 } from '@mui/icons-material';
 import { Button as KendoButton } from '@progress/kendo-react-buttons';
 import { Card as KendoCard } from '@progress/kendo-react-layout';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import mockAPI from '../services/mockAPI';
 
 const RootDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout } = useBffAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [projects, setProjects] = useState([]);

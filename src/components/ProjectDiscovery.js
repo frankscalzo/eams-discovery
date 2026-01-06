@@ -64,7 +64,7 @@ import {
   Warning as WarningIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import { useProject } from '../contexts/ProjectContext';
 import BackButton from './BackButton';
 import ProjectDiscoveryAPI from '../services/projectDiscoveryAPI';
@@ -73,7 +73,7 @@ import { getProjects, createProject, getCompanies } from '../services/localDataS
 import SimpleProjectForm from './SimpleProjectForm';
 
 const ProjectDiscovery = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const { currentProject } = useProject();
   const [activeTab, setActiveTab] = useState(0);
   const [projects, setProjects] = useState([]);

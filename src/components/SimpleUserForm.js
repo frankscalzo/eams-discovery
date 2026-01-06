@@ -19,7 +19,7 @@ import {
   Box
 } from '@mui/material';
 import awsDataService from '../services/awsDataService';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 import { USER_LEVELS, USER_LEVEL_PERMISSIONS, getAvailableUserLevels } from '../constants/userPermissions';
 
 // US States list
@@ -78,7 +78,7 @@ const US_STATES = [
 ];
 
 const SimpleUserForm = ({ open, onClose, onSuccess }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

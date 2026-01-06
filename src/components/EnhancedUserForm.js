@@ -46,10 +46,10 @@ import {
   isPrimaryCompanyUser 
 } from '../constants/userTypes';
 import enhancedUserAPI from '../services/enhancedUserAPI';
-import { useAuth } from '../contexts/AuthContext';
+import { useBffAuth } from '../contexts/BffAuthContext';
 
 const EnhancedUserForm = ({ open, onClose, user, onSuccess }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useBffAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
     // Basic Information
